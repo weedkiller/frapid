@@ -1,119 +1,53 @@
-﻿@using Frapid.Reports.Engine.Model
-@model Frapid.Reports.ViewModels.ParameterMeta
+﻿@model Frapid.Reports.ViewModels.ParameterMeta
 
 @{
-    ViewBag.Title = "Frapid Dashboard";
+    ViewBag.Title = Model.ReportTitle;
     Layout = ViewBag.Layout;
 }
 
+<script src="/scripts/trumbowyg/dist/trumbowyg.min.js"></script>
+<link rel="stylesheet" href="/scripts/trumbowyg/dist/ui/trumbowyg.min.css">
+<link rel="stylesheet" type="text/css" href="/Areas/Frapid.Reports/styles/reports.css"/>
 
-<style>
-    #dashboard-container {
-        padding: 1em 0 !important;
-    }
-
-    .padded.container {
-        padding: 2em !important;
-    }
-
-    .collapsed.column {
-        padding: 0 !important;
-    }
-
-    .pusher, .ng-scope {
-        height: 100% !important;
-    }
-
-    .report-panel {
-        background-color: #949596;
-        padding-bottom: 4em;
-    }
-
-    .toolbar {
-        background-color: #444;
-        height: 3em;
-        text-align: left;
-        padding-left: 1em;
-    }
-
-        .toolbar .button {
-            display: inline-flex;
-            font-size: 0.8em;
-            cursor: pointer;
-            padding: 0.8em;
-            height: 3.5em;
-            width: 2.5em;
-            margin: 2px;
-            color: #dadada;
-            text-shadow: 2px 2px 20px white;
-        }
-
-            .toolbar .button:hover {
-                background-color: green;
-            }
-
-    iframe {
-        width: 1000px;
-        background-color: #fafafa;
-        border: none;
-        display: block;
-        margin: 0 auto;
-        height: 100%;
-        overflow: auto;
-        padding: 2em 2em 0 2em;
-    }
-
-    .vertically.very.relaxed {
-        padding: 3em 0;
-    }
-
-    .header {
-        font-weight: 100 !important;
-    }
-
-    .filter.container {
-        padding: 1em;
-    }
-</style>
 <div class="report-panel">
-    <div class="ui stackable report grid" style="height: 100%;">
+    <div class="ui stackable report grid">
         <div class="three wide collapsed column">
             <div class="toolbar">
-                <div onclick="$('iframe').get(0).contentWindow.print();" class="print button" title="Print This Report">
+                <div onclick="$('iframe').get(0).contentWindow.print();" class="print button" title="@I18N.PrintThisReport">
                     <i class="print icon"></i>
                 </div>
-                <div class="mail button" title="Email This Report">
+                <div class="mail button" title="@I18N.EmailThisReport">
                     <i class="mail icon"></i>
                 </div>
-                <div class="pdf button" title="Download PDF">
+                <div class="pdf button" title="@I18N.DownloadPdf">
                     <i class="file pdf outline icon"></i>
                 </div>
-                <div class="excel button" title="Download Excel">
+                <div class="excel button" title="@I18N.DownloadExcel">
                     <i class="file excel outline icon"></i>
                 </div>
-                <div class="word button" title="Download Word">
+                <div class="word button" title="@I18N.DownloadWord">
                     <i class="file word outline icon"></i>
                 </div>
-                <div class="xml button" title="Download XML">
+                <div class="xml button" title="@I18N.DownloadXml">
                     <i class="code icon"></i>
                 </div>
-                <div class="text button" title="Download Text">
+                <div class="text button" title="@I18N.DownloadText">
                     <i class="file text outline icon"></i>
                 </div>
-                <div class="zoom in button" title="Zoom In">
+                <div class="zoom in button" title="@I18N.ZoomIn">
                     <i class="zoom icon"></i>
                 </div>
-                <div class="zoom out button" title="Zoom Out">
-                    <i class="zoom icon"></i>
+                <div class="zoom out button" title="@I18N.ZoomOut">
+                    <i class="zoom out icon"></i>
                 </div>
-                <div onclick="document.location = document.location" class="refresh button" title="Refresh">
+                <div onclick="document.location = document.location" class="refresh button" title="@I18N.Reload">
                     <i class="refresh icon"></i>
                 </div>
             </div>
-            <div class="filter padded container" style="background-color: #efefef; height: 100%;">
-                <div class="ui huge header">@Model.ReportTitle</div>
+            <div class="filter padded query container" style="background-color: #efefef; min-height: 1200px;">
+                <div class="report title">@Model.ReportTitle</div>
 
-                <div class="ui small parameter form">
+                <div class="ui small parameter flat form">
                     @foreach (var parameter in Model.Parameters)
                     {
                         string name = parameter.Name.Replace("@", "");
@@ -124,151 +58,83 @@
                             @if (!string.IsNullOrWhiteSpace(parameter.PopulateFrom))
                             {
                                 <select data-paramter="@name" id="@(name)Select"
-                                        class="ui search dropdown"
                                         data-key-field="@parameter.KeyField"
                                         data-value-field="@parameter.ValueField"
                                         data-default-value="@parameter.DefaultValue"
-                                        data-url="@parameter.PopulateFrom"></select>
+                                        data-url="@parameter.PopulateFrom" 
+                                        data-optional="@parameter.Optional.ToString().ToLowerInvariant()">
+                                </select>
                             }
                             else
                             {
-                                switch (parameter.Type)
+                                switch (parameter.Type.ToUpperInvariant())
                                 {
-                                    case DataSourceParameterType.Date:
-                                        <input data-paramter="@name" id="@(name)InputDate" value="@parameter.DefaultValue" class="date" type="date" />
+                                    case "SYSTEM.DATETIME":
+                                        <input data-paramter="@name" id="@(name)InputDate" value="@parameter.DefaultValue" class="date" type="date"/>
                                         break;
-                                    case DataSourceParameterType.Bool:
+                                    case "BOOL":
+                                    case "BOOLEAN":
                                         <div class="ui toggle checkbox">
                                             <input data-paramter="@name" id="@(name)InputDate" value="@parameter.DefaultValue" type="checkbox">
                                             <label>Yes</label>
                                         </div>
                                         break;
-                                    case DataSourceParameterType.Decimal:
-                                    case DataSourceParameterType.Double:
-                                    case DataSourceParameterType.Number:
-                                        <input data-paramter="@name" id="@(name)InputText" value="@parameter.DefaultValue" type="text" class="decimal" data-number="" />
+                                    case "DECIMAL":
+                                    case "DOUBLE":
+                                        <input data-paramter="@name" id="@(name)InputText" value="@parameter.DefaultValue" type="text" class="decimal" data-number=""/>
+                                        break;
+                                    case "INT":
+                                    case "LONG":
+                                        <input data-paramter="@name" id="@(name)InputText" value="@parameter.DefaultValue" type="text" class="integer" data-number=""/>
                                         break;
                                     default:
-                                        <input data-paramter="@name" id="@(name)InputText" value="@parameter.DefaultValue" type="text" />
+                                        <input data-paramter="@name" id="@(name)InputText" value="@parameter.DefaultValue" type="text"/>
                                         break;
                                 }
                             }
                         </div>
                     }
-                    <button id="ShowButton" class="ui positive button">Show</button>
+                    <button id="ShowButton" class="ui positive button">@I18N.Show</button>
                 </div>
             </div>
         </div>
         <div class="thirteen wide column">
-            <iframe src="@Model.ReportSourcePath"></iframe>
+            <iframe id="ReportIframe" src="@Model.ReportSourcePath" onload="setHeight(this);" style="min-height: 1200px;"></iframe>
         </div>
     </div>
 </div>
-<script src="/Scripts/frapid/utilities/form.js"></script>
-<script>
-    $(".dropdown").dropdown();
-    loadDatepicker();
-    (function () {
 
-        var persist = JSON.parse(localStorage.getItem(document.location.pathname));
-
-        if (persist) {
-            $.each(persist, function () {
-                var el = $("#" + this.id);
-                var value = this.value;
-                var defaultValue;
-
-                if (el.is("select")) {
-                    defaultValue = el.attr("data-default-value");
-                    if (!defaultValue) {
-                        el.attr("data-default-value", value);
-                    };
-                } else {
-                    defaultValue = el.val();
-                    if (!defaultValue) {
-
-                        if (el.is(".date")) {
-                            var date = new Date(value);
-
-                            el.datepicker("setDate", date);
-                        } else {
-                            el.val(value);
-                        };
-                    };
-                };
-
-            });
-        };
-
-        var candidates = $("select[data-url]");
-
-        $.each(candidates, function () {
-            var el = $(this);
-            var url = el.attr("data-url");
-            var keyField = el.attr("data-key-field");
-            var valueField = el.attr("data-value-field");
-            var defaultValue = el.attr("data-default-value");
-
-
-            window.ajaxDataBind(url, el, null, defaultValue, null, function () {
-                setTimeout(function () {
-                    el.dropdown("set selected", defaultValue);
-                },
-                    100);
-            }, keyField, valueField, false);
-        });
-    })();
-
-    $("#ShowButton")
-        .unbind("click")
-        .bind("click",
-            function () {
-                var persist = [];
-
-                var query = [];
-
-                var dateEls = $(".parameter.form .field input.date");
-
-                $.each(dateEls,
-                    function () {
-                        var el = $(this);
-                        var parameter = el.attr("data-paramter");
-                        var value = el.datepicker("getDate").valueOf();
-                        var id = el.attr("id");
-
-                        persist.push({
-                            id: id,
-                            value: value
-                        });
-
-                        if (parameter) {
-                            query.push(parameter + "=" + value);
-                        };
-                    });
-
-                var otherEls = $(".parameter.form .field input:not(.date), .parameter.form .field select");
-
-                $.each(otherEls,
-                    function () {
-                        var el = $(this);
-                        var parameter = el.attr("data-paramter");
-                        var value = el.val();
-
-                        var id = el.attr("id");
-
-                        persist.push({
-                            id: id,
-                            value: value
-                        });
-
-                        if (parameter) {
-                            query.push(parameter + "=" + value);
-                        };
-                    });
-
-                localStorage.setItem(document.location.pathname, JSON.stringify(persist));
-
-                var location = document.location.pathname + "?" + query.join("&");
-                document.location = location;
-            });
-</script>
+<div id="EmailModal" class="ui modal hide on print">
+    <i class="close icon"></i>
+    <div class="header">
+        @I18N.SendEmail
+    </div>
+    <div class="content">
+        <div class="ui flat form basic segment">
+            <div class="field">
+                <label>@I18N.SendTo</label>
+                <input id="SendToInputEmail" type="email" required data-persist placeholder="Enter Email Address"/>
+            </div>
+            <div class="field">
+                <label>@I18N.Subject</label>
+                <input id="SubjectInputText" type="text" required data-persist placeholder="Enter Subject" value="@Model.ReportTitle"/>
+            </div>
+            <div class="field">
+                <label>@I18N.Message</label>
+                <textarea id="MessageTextArea" placeholder="Enter Your Message" rows="10">@I18N.PleaseFindAttachedDocument</textarea>
+            </div>
+            <div class="hidden field">
+                <input type="text" id="FileNameInputText" value="@Model.ReportTitle" />
+            </div>
+            <div class="attachment vpad8 field">
+                <label>@I18N.Attachments</label>
+                <a href="javascript:void(0);">
+                    <i class="file pdf red outline icon"></i><span class="title">@(Model.ReportTitle).pdf</span></a>
+            </div>
+            <button id="SendEmailButton" class="ui positive button">@I18N.Send</button>
+            <button class="ui negative button" onclick="$('#EmailModal').modal('hide');">@I18N.Close</button>
+        </div>
+    </div>
+</div>
+<a id="DownloadAnchor" style="display: none;"></a>
+<script src="/Areas/Frapid.Reports/scripts/reports.js" async="" defer=""></script>

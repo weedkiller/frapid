@@ -1,13 +1,13 @@
 ﻿@model dynamic
 
 @{
-    ViewBag.Title = "Role Management";
+    ViewBag.Title = I18N.RoleManagement;
     Layout = ViewBag.Layout;
 }
 <script>
     var scrudFactory = new Object();
 
-    scrudFactory.title = "Role Management";
+    scrudFactory.title = window.translate("RoleManagement");
 
     scrudFactory.viewAPI = "/api/forms/account/roles";
     scrudFactory.viewTableName = "account.roles";
@@ -15,7 +15,8 @@
     scrudFactory.formAPI = "/api/forms/account/roles";
     scrudFactory.formTableName = "account.roles";
 
-    scrudFactory.excludedColumns = ["audit_user_id", "audit_ts"];
+    scrudFactory.excludedColumns = ["AuditUserId", "AuditTs", "Deleted"];
+
 
     scrudFactory.allowDelete = true;
     scrudFactory.allowEdit = true;
@@ -32,7 +33,7 @@
     });
 
     scrudFactory.card = {
-        header: "role_name"
+        header: "RoleName"
     };
 
 

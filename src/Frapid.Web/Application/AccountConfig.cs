@@ -9,7 +9,7 @@ using Microsoft.Owin.Security.Jwt;
 using Microsoft.Owin.Security.OAuth;
 using Owin;
 
-namespace Frapid.Web
+namespace Frapid.Web.Application
 {
     public static class AccountConfig
     {
@@ -29,18 +29,18 @@ namespace Frapid.Web
 
             app.UseJwtBearerAuthentication
                 (
-                 new JwtBearerAuthenticationOptions
-                 {
-                     AuthenticationMode = AuthenticationMode.Active,
-                     AllowedAudiences = new[]
-                                        {
-                                            audience
-                                        },
-                     IssuerSecurityTokenProviders = new IIssuerSecurityTokenProvider[]
-                                                    {
-                                                        new SymmetricKeyIssuerSecurityTokenProvider(issuer, secret)
-                                                    }
-                 });
+                    new JwtBearerAuthenticationOptions
+                    {
+                        AuthenticationMode = AuthenticationMode.Active,
+                        AllowedAudiences = new[]
+                        {
+                            audience
+                        },
+                        IssuerSecurityTokenProviders = new IIssuerSecurityTokenProvider[]
+                        {
+                            new SymmetricKeyIssuerSecurityTokenProvider(issuer, secret)
+                        }
+                    });
         }
     }
 }

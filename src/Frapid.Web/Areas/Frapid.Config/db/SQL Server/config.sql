@@ -13,7 +13,7 @@ CREATE TABLE config.kanbans
     kanban_name                                 national character varying(128) NOT NULL,
     description                                 national character varying(500),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 CREATE TABLE config.kanban_details
@@ -23,7 +23,7 @@ CREATE TABLE config.kanban_details
     rating                                      smallint CHECK(rating>=0 AND rating<=5),
     resource_id                                 national character varying(128) NOT NULL,
     audit_user_id                               integer NULL REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)    
 );
 
@@ -46,7 +46,7 @@ CREATE TABLE config.smtp_configs
     smtp_password                               national character varying(256) NOT NULL,
     smtp_port                                   integer NOT NULL DEFAULT(587),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -54,6 +54,7 @@ CREATE TABLE config.smtp_configs
 CREATE TABLE config.email_queue
 (
     queue_id                                    bigint IDENTITY NOT NULL PRIMARY KEY,
+    application_name                            national character varying(256),
     from_name                                   national character varying(256) NOT NULL,
     from_email                                  national character varying(256) NOT NULL,
     reply_to                                    national character varying(256) NOT NULL,
@@ -70,7 +71,28 @@ CREATE TABLE config.email_queue
     canceled_on                                 datetimeoffset,
 	is_test										bit NOT NULL DEFAULT(0),
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
+	deleted										bit DEFAULT(0)
+);
+
+CREATE TABLE config.sms_queue
+(
+    queue_id                                    bigint IDENTITY NOT NULL PRIMARY KEY,
+    application_name                            national character varying(256),
+    from_name                                   national character varying(256) NOT NULL,
+    from_number                                 national character varying(256) NOT NULL,
+    subject                                     national character varying(256) NOT NULL,
+    send_to                                     national character varying(256) NOT NULL,
+    message                                     national character varying(MAX) NOT NULL,
+    added_on                                    datetimeoffset NOT NULL DEFAULT(getutcdate()),
+	send_on										datetimeoffset NOT NULL DEFAULT(getutcdate()),
+    delivered                                   bit NOT NULL DEFAULT(0),
+    delivered_on                                datetimeoffset,
+    canceled                                    bit NOT NULL DEFAULT(0),
+    canceled_on                                 datetimeoffset,
+	is_test										bit NOT NULL DEFAULT(0),
+    audit_user_id                           	integer REFERENCES account.users,
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -89,7 +111,7 @@ CREATE TABLE config.filters
     filter_value                                national character varying(500),
     filter_and_value                            national character varying(500),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -102,7 +124,7 @@ CREATE TABLE config.custom_field_data_types
     data_type                                   national character varying(50) NOT NULL PRIMARY KEY,
 	underlying_type								national character varying(500) NOT NULL,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -112,7 +134,7 @@ CREATE TABLE config.custom_field_forms
     table_name                                  national character varying(500) NOT NULL UNIQUE,
     key_name                                    national character varying(500) NOT NULL,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -131,7 +153,7 @@ CREATE TABLE config.custom_field_setup
                                                 REFERENCES config.custom_field_data_types,
     description                                 national character varying(500) NOT NULL,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -143,41 +165,9 @@ CREATE TABLE config.custom_fields
     resource_id                                 national character varying(500) NOT NULL,
     value                                       national character varying(MAX),
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
-
-
-CREATE TABLE config.flag_types
-(
-    flag_type_id                                integer IDENTITY PRIMARY KEY,
-    flag_type_name                              national character varying(24) NOT NULL,
-    background_color                            color NOT NULL,
-    foreground_color                            color NOT NULL,
-    audit_user_id                               integer NULL REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
-	deleted										bit DEFAULT(0)
-);
-
-
-CREATE TABLE config.flags
-(
-    flag_id                                     bigint IDENTITY PRIMARY KEY,
-    user_id                                     integer NOT NULL REFERENCES account.users,
-    flag_type_id                                integer NOT NULL REFERENCES config.flag_types(flag_type_id),
-    resource                                    national character varying(500), --Fully qualified resource name. Example: transactions.non_gl_stock_master.
-    resource_key                                national character varying(500), --The unique identifier for lookup. Example: non_gl_stock_master_id,
-    resource_id                                 national character varying(500), --The value of the unique identifier to lookup for,
-    flagged_on                                  datetimeoffset NULL 
-                                                DEFAULT(getutcdate()),
-    audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
-	deleted										bit DEFAULT(0)
-);
-
-CREATE UNIQUE INDEX flags_user_id_resource_resource_id_uix
-ON config.flags(user_id, resource, resource_key, resource_id)
-WHERE deleted = 0;
 
 
 GO
@@ -201,19 +191,19 @@ END;
 IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Number')
 BEGIN
     INSERT INTO config.custom_field_data_types(data_type, underlying_type)
-    SELECT 'Positive Number', 'dbo.integer_strict';
+    SELECT 'Positive Number', 'integer';
 END;
 
 IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Number')
 BEGIN
     INSERT INTO config.custom_field_data_types(data_type, underlying_type)
-    SELECT 'Money', 'decimal(24, 4)';
+    SELECT 'Money', 'numeric(30, 6)';
 END;
 
 IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Number')
 BEGIN
     INSERT INTO config.custom_field_data_types(data_type, underlying_type)
-    SELECT 'Money (Positive Value Only)', 'dbo.money_strict';
+    SELECT 'Money (Positive Value Only)', 'numeric(30, 6)';
 END;
 
 IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Date')
@@ -340,86 +330,6 @@ WHERE config.filters.deleted = 0;
 GO
 
 
--->-->-- src/Frapid.Web/Areas/Frapid.Config/db/SQL Server/1.x/1.0/src/05.views/config.flag_view.sql --<--<--
-IF OBJECT_ID('config.flag_view') IS NOT NULL
-DROP VIEW config.flag_view;
-GO
-CREATE VIEW config.flag_view
-AS
-SELECT
-    config.flags.flag_id,
-    config.flags.user_id,
-    config.flags.flag_type_id,
-    config.flags.resource_id,
-    config.flags.resource,
-    config.flags.resource_key,
-    config.flags.flagged_on,
-    config.flag_types.flag_type_name,
-    config.flag_types.background_color,
-    config.flag_types.foreground_color
-FROM config.flags
-INNER JOIN config.flag_types
-ON config.flags.flag_type_id = config.flag_types.flag_type_id
-WHERE config.flags.deleted = 0;
-
-
-GO
-
-
--->-->-- src/Frapid.Web/Areas/Frapid.Config/db/SQL Server/1.x/1.0/src/06.functions-and-logic/config.create_flag.sql --<--<--
-IF OBJECT_ID('config.create_flag') IS NOT NULL
-DROP PROCEDURE config.create_flag;
-
-GO
-
-
-CREATE PROCEDURE config.create_flag
-(
-    @user_id            integer,
-    @flag_type_id       integer,
-    @resource           national character varying(500),
-    @resource_key       national character varying(500),
-    @resource_id        national character varying(500)
-)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF NOT EXISTS
-    (
-		SELECT * 
-		FROM config.flags 
-		WHERE user_id = @user_id 
-		AND resource = @resource 
-		AND resource_key = @resource_key 
-		AND resource_id=@resource_id
-		AND config.flags.deleted = 0
-	)
-    BEGIN
-        INSERT INTO config.flags(user_id, flag_type_id, resource, resource_key, resource_id)
-        SELECT @user_id, @flag_type_id, @resource, @resource_key, @resource_id;
-    END
-    ELSE
-    BEGIN
-        UPDATE config.flags
-        SET
-            flag_type_id=@flag_type_id
-        WHERE 
-            user_id=@user_id 
-        AND 
-            resource=@resource 
-        AND 
-            resource_key=@resource_key 
-        AND 
-            resource_id=@resource_id;
-    END;
-END;
-
-
-
-GO
-
-
 -->-->-- src/Frapid.Web/Areas/Frapid.Config/db/SQL Server/1.x/1.0/src/06.functions-and-logic/config.get_custom_field_definition.sql --<--<--
 
 IF OBJECT_ID('config.get_custom_field_definition') IS NOT NULL
@@ -436,6 +346,7 @@ CREATE PROCEDURE config.get_custom_field_definition
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
 	DECLARE @result TABLE
 	(
@@ -487,7 +398,7 @@ CREATE FUNCTION config.get_custom_field_form_name
 (
     @table_name character varying
 )
-RETURNS character varying
+RETURNS national character varying
 BEGIN
     RETURN 
     (
@@ -529,39 +440,6 @@ END;
 
 GO
 
--->-->-- src/Frapid.Web/Areas/Frapid.Config/db/SQL Server/1.x/1.0/src/06.functions-and-logic/config.get_flag_type_id.sql --<--<--
-IF OBJECT_ID('config.get_flag_type_id') IS NOT NULL
-DROP FUNCTION config.get_flag_type_id;
-
-GO
-
-
-CREATE FUNCTION config.get_flag_type_id
-(
-    @user_id							integer,
-    @resource							national character varying(500),
-    @resource_key						national character varying(500),
-    @resource_id						national character varying(500)
-)
-RETURNS integer
-AS
-BEGIN
-    RETURN 
-    (
-		SELECT flag_type_id
-		FROM config.flags
-		WHERE user_id=@user_id
-		AND resource=@resource
-		AND resource_key=@resource_key
-		AND resource_id=@resource_id
-		AND config.flags.deleted = 0
-		
-	);
-END;
-
-GO
-
-
 -->-->-- src/Frapid.Web/Areas/Frapid.Config/db/SQL Server/1.x/1.0/src/06.functions-and-logic/config.get_user_id_by_login_id.sql --<--<--
 IF OBJECT_ID('config.get_user_id_by_login_id') IS NOT NULL
 DROP FUNCTION config.get_user_id_by_login_id;
@@ -586,11 +464,10 @@ GO
 
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Config/db/SQL Server/1.x/1.0/src/09.menus/0.menu.sql --<--<--
-EXECUTE core.create_app 'Frapid.Config', 'Config', '1.0', 'MixERP Inc.', 'December 1, 2015', 'orange configure', '/dashboard/config/offices', null;
-EXECUTE core.create_menu 'Frapid.Config', 'Offices', '/dashboard/config/offices', 'building outline', '';
-EXECUTE core.create_menu 'Frapid.Config', 'Flags', '/dashboard/config/flags', 'flag', '';
-EXECUTE core.create_menu 'Frapid.Config', 'SMTP', '/dashboard/config/smtp', 'at', '';
-EXECUTE core.create_menu 'Frapid.Config', 'File Manager', '/dashboard/config/file-manager', 'file national character varying(500) outline', '';
+EXECUTE core.create_app 'Frapid.Config', 'Config', 'Config', '1.0', 'MixERP Inc.', 'December 1, 2015', 'orange configure', '/dashboard/config/offices', null;
+EXECUTE core.create_menu 'Frapid.Config', 'Offices', 'Offices', '/dashboard/config/offices', 'building outline', '';
+EXECUTE core.create_menu 'Frapid.Config', 'SMTP', 'SMTP', '/dashboard/config/smtp', 'at', '';
+EXECUTE core.create_menu 'Frapid.Config', 'FileManager', 'File Manager', '/dashboard/config/file-manager', 'file national character varying(500) outline', '';
 
 GO
 
@@ -608,7 +485,7 @@ EXECUTE auth.create_app_menu_policy
 'User', 
 @office_id, 
 'Frapid.Config',
-'{Offices, Flags}';
+'{Offices}';
 
 EXECUTE auth.create_app_menu_policy
 'Admin', 
@@ -629,7 +506,6 @@ EXECUTE auth.create_api_access_policy '{*}', @office_id, 'config.kanbans', '{*}'
 EXECUTE auth.create_api_access_policy '{*}', @office_id, 'config.filter_name_view', '{*}', 1;
 
 EXECUTE auth.create_api_access_policy '{User}', @office_id, 'core.offices', '{*}', 1;
-EXECUTE auth.create_api_access_policy '{User}', @office_id, 'config.flags', '{*}', 1;
 EXECUTE auth.create_api_access_policy '{Admin}', @office_id, '', '{*}', 1;
 
 
@@ -643,3 +519,26 @@ GO
 
 EXEC sp_addrolemember  @rolename = 'db_datareader', @membername  = 'report_user'
 GO
+
+DECLARE @proc sysname
+DECLARE @cmd varchar(8000)
+
+DECLARE cur CURSOR FOR 
+SELECT '[' + schema_name(schema_id) + '].[' + name + ']' FROM sys.objects
+WHERE type IN('FN')
+AND is_ms_shipped = 0
+ORDER BY 1
+OPEN cur
+FETCH next from cur into @proc
+WHILE @@FETCH_STATUS = 0
+BEGIN
+     SET @cmd = 'GRANT EXEC ON ' + @proc + ' TO report_user';
+     EXEC (@cmd)
+
+     FETCH next from cur into @proc
+END
+CLOSE cur
+DEALLOCATE cur
+
+GO
+

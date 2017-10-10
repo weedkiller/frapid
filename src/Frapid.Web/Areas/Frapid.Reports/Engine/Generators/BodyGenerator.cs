@@ -1,6 +1,6 @@
+using System;
 using System.Linq;
 using System.Text;
-using Frapid.i18n;
 using Frapid.Reports.Engine.Model;
 using Frapid.Reports.Helpers;
 
@@ -11,12 +11,12 @@ namespace Frapid.Reports.Engine.Generators
         public int Order { get; } = 4000;
         public string Name => "Body";
 
-        public string Generate(Report report)
+        public string Generate(string tenant, Report report)
         {
             var html = new StringBuilder();
             html.Append("<div class='body'>");
 
-            if (!string.IsNullOrWhiteSpace(report.Body.Content))
+            if (!string.IsNullOrWhiteSpace(report.Body?.Content))
             {
                 html.Append("<div class='body content'>");
                 html.Append(report.Body.Content);
@@ -37,6 +37,11 @@ namespace Frapid.Reports.Engine.Generators
         {
             var html = new StringBuilder();
 
+            if (report?.Body?.GridViews == null)
+            {
+                return string.Empty;
+            }
+
             foreach (var grid in report.Body.GridViews)
             {
                 html.Append(this.GetGridView(report, grid));
@@ -54,7 +59,7 @@ namespace Frapid.Reports.Engine.Generators
                 return null;
             }
 
-            var dataSource = report.DataSources.FirstOrDefault(x => x.Index == index.Value);
+            var dataSource = report?.DataSources?.FirstOrDefault(x => x.Index == index.Value);
 
             if (dataSource == null)
             {
@@ -65,15 +70,20 @@ namespace Frapid.Reports.Engine.Generators
         }
 
 
-        private string GetFormattedCell(object value)
+        private string GetFormattedCell(object value, string expression)
         {
             string cell = "<td";
 
-            string cellValue = FormattingHelper.GetFormattedValue(value);
+            string cellValue = FormattingHelper.GetFormattedValue(value, expression);
 
             if (value is decimal || value is double || value is float)
             {
-                cell += " class='right aligned'>";
+                cell += " data-value='" + value + "'";
+                cell += " class='right aligned decimal number'>";
+            }
+            else if (value is DateTime || value is DateTimeOffset)
+            {
+                cell += " class='unformatted date'>";
             }
             else
             {
@@ -84,11 +94,22 @@ namespace Frapid.Reports.Engine.Generators
             return cell;
         }
 
+
         private string DataTableToHtml(DataSource dataSource, GridView grid, Report report)
         {
+            if (dataSource.Data.Rows.Count == 0 && dataSource.HideWhenEmpty)
+            {
+                return string.Empty;
+            }
+
             var html = new StringBuilder();
 
-            html.Append("<table ");
+            if (!string.IsNullOrWhiteSpace(dataSource.Title))
+            {
+                html.Append("<h2 class='grid view header'>" + dataSource.Title + "</h2>");
+            }
+
+            html.Append("<table id='GridView" + dataSource.Index + "' ");
 
             if (!string.IsNullOrWhiteSpace(grid.CssStyle))
             {
@@ -108,15 +129,15 @@ namespace Frapid.Reports.Engine.Generators
             for (int i = 0; i < dataSource.Data.Columns.Count; i++)
             {
                 string columnName = dataSource.Data.Columns[i].ColumnName;
-                columnName = ResourceManager.GetString(report.Tenant, "ScrudResource", columnName);
 
+                columnName = LocalizationHelper.Localize(columnName, true);
                 html.Append("<th>" + columnName + "</th>");
             }
 
             html.Append("</tr>");
             html.Append("</thead>");
 
-            if (dataSource.RunningTotalTextColumnIndex != null && dataSource.RunningTotalTextColumnIndex > 0)
+            if (dataSource.RunningTotalTextColumnIndex != null)
             {
                 int index = dataSource.RunningTotalTextColumnIndex.Value;
                 var candidates = dataSource.RunningTotalFieldIndices;
@@ -153,8 +174,12 @@ namespace Frapid.Reports.Engine.Generators
 
                 for (int j = 0; j < dataSource.Data.Columns.Count; j++)
                 {
-                    var value = dataSource.Data.Rows[i][j];
-                    html.Append(this.GetFormattedCell(value));
+                    string columnName = dataSource.Data.Columns[j].ColumnName;
+
+                    var formatting = dataSource.FormattingFields.LastOrDefault(x => string.Equals(x.Name, columnName, StringComparison.InvariantCultureIgnoreCase));
+                    var value = dataSource.Data.Rows[i][columnName];
+
+                    html.Append(this.GetFormattedCell(value, formatting?.FormatExpression));
                 }
 
                 html.Append("</tr>");

@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\Microsoft.Net.Compilers.1.2.2\build\Microsoft.Net.Compilers.props" Condition="Exists('packages\Microsoft.Net.Compilers.1.2.2\build\Microsoft.Net.Compilers.props')" />
-  <Import Project="packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.1\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.1\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
+  <Import Project="packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
+  <Import Project="packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props" Condition="Exists('packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -85,13 +85,13 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.i18n.dll</HintPath>
     </Reference>
+    <Reference Include="Frapid.Mapper, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\bin\Frapid.Mapper.dll</HintPath>
+    </Reference>
     <Reference Include="Frapid.Messaging, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.Messaging.dll</HintPath>
-    </Reference>
-    <Reference Include="Frapid.NPoco, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\Frapid.NPoco.dll</HintPath>
     </Reference>
     <Reference Include="Frapid.TokenManager, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -105,21 +105,25 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.WebsiteBuilder.dll</HintPath>
     </Reference>
-    <Reference Include="jose-jwt, Version=1.9.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\jose-jwt.1.9.2\lib\4.0\jose-jwt.dll</HintPath>
+    <Reference Include="jose-jwt, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\jose-jwt.2.1.0\lib\net40\jose-jwt.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Mapster, Version=2.1.0.0, Culture=neutral, PublicKeyToken=2f39883af23c29a8, processorArchitecture=MSIL">
-      <HintPath>packages\Mapster.2.3.0\lib\net45\Mapster.dll</HintPath>
+    <Reference Include="Mapster, Version=2.6.1.0, Culture=neutral, PublicKeyToken=2f39883af23c29a8, processorArchitecture=MSIL">
+      <HintPath>packages\Mapster.2.6.1\lib\net45\Mapster.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=1.0.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Npgsql, Version=2.2.6.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
-      <HintPath>packages\Npgsql.2.2.6\lib\net45\Npgsql.dll</HintPath>
+    <Reference Include="Npgsql, Version=3.1.9.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
+      <HintPath>packages\Npgsql.3.1.9\lib\net451\Npgsql.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Serilog, Version=1.5.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
@@ -135,6 +139,7 @@
     <Reference Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Web.Webpages">
       <HintPath>packages\Microsoft.AspNet.Webpages.3.2.3\lib\net45\System.Web.Webpages.dll</HintPath>
     </Reference>
@@ -144,15 +149,6 @@
     <Reference Include="System.Web.Mvc">
       <HintPath>packages\Microsoft.AspNet.Mvc.5.2.3\lib\net45\System.Web.Mvc.dll</HintPath>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Scripts\Account\ResetConfirmation\index.js" />
-    <Content Include="Scripts\Account\Reset\index.js" />
-    <Content Include="Scripts\Account\SignIn\google.js" />
-    <Content Include="Scripts\Account\SignIn\facebook.js" />
-    <Content Include="Scripts\Account\SignIn\default.js" />
-    <Content Include="Scripts\Account\ChangePassword\index.js" />
-    <Content Include="Scripts\Account\SignUp\signup.js" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration.cs" />
@@ -179,8 +175,10 @@
     <Compile Include="DTO\User.cs" />
     <Compile Include="Exceptions\EmailConfirmException.cs" />
     <Compile Include="Emails\ResetEmail.cs" />
-    <Compile Include="Models\ChangePasswordModel.cs" />
-    <Compile Include="Models\SignUpModel.cs" />
+    <Compile Include="I18N.cs" />
+    <Compile Include="Models\Backend\ChangePasswordModel.cs" />
+    <Compile Include="Models\Frontend\ChangePasswordModel.cs" />
+    <Compile Include="Models\Frontend\SignUpModel.cs" />
     <Compile Include="ViewModels\ChangePasswordInfo.cs" />
     <Compile Include="ViewModels\IUserInfo.cs" />
     <Compile Include="Emails\WelcomeEmail.cs" />
@@ -195,9 +193,7 @@
     <Compile Include="DTO\Registration.cs" />
     <Compile Include="DTO\Reset.cs" />
     <Compile Include="PasswordManager.cs" />
-    <Compile Include="StartupTask.cs" />
     <Compile Include="InputModels\ChangePassword.cs" />
-    <Compile Include="ViewModels\Language.cs" />
     <Compile Include="RemoteAuthentication\FacebookAuthentication.cs" />
     <Compile Include="ViewModels\FacebookUserInfo.cs" />
     <Compile Include="RemoteAuthentication\GoogleAuthentication.cs" />
@@ -216,7 +212,14 @@
     <Compile Include="ViewModels\UserInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Scripts\EmailTemplate\Editor.js" />
+    <Content Include="scripts\account\change-password\index.js" />
+    <Content Include="scripts\account\reset-confirmation\index.js" />
+    <Content Include="scripts\account\reset\index.js" />
+    <Content Include="scripts\account\sign-in\default.js" />
+    <Content Include="scripts\account\sign-in\facebook.js" />
+    <Content Include="scripts\account\sign-in\google.js" />
+    <Content Include="scripts\account\sign-up\signup.js" />
+    <Content Include="scripts\email-template\editor.js" />
     <Content Include="Views\web.config" />
     <Content Include="packages.config" />
     <Content Include="Views\SignIn\Index.cshtml" />
@@ -277,9 +280,13 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.1\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.1\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.Net.Compilers.1.2.2\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Net.Compilers.1.2.2\build\Microsoft.Net.Compilers.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
   </Target>
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

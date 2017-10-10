@@ -15,11 +15,11 @@ namespace Frapid.Installer
 
             try
             {
-                var installer = new Tenant.Installer(url);
-                installer.InstallAsync().Wait();
+                var installer = new Tenant.Installer(url, false);
+                installer.InstallAsync().GetAwaiter().GetResult();
 
                 var site = new ApprovedDomainSerializer().Get().FirstOrDefault(x => x.DomainName.Equals(url));
-                DbInstalledDomains.Add(site);
+                DbInstalledDomains.AddAsync(site).GetAwaiter().GetResult();
                 new InstalledDomainSerializer().Add(site);
             }
             catch (Exception ex)

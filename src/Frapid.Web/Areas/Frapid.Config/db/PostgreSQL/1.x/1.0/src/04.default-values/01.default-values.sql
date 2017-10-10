@@ -15,17 +15,17 @@ BEGIN
 
 	IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Positive Number') THEN
 		INSERT INTO config.custom_field_data_types(data_type, underlying_type)
-		SELECT 'Positive Number', 'dbo.integer_strict';
+		SELECT 'Positive Number', 'integer';
 	END IF;
 
 	IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Money') THEN
 		INSERT INTO config.custom_field_data_types(data_type, underlying_type)
-		SELECT 'Money', 'decimal(24, 4)';
+		SELECT 'Money', 'numeric(30, 6)';
 	END IF;
 
 	IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Money (Positive Value Only)') THEN
 		INSERT INTO config.custom_field_data_types(data_type, underlying_type)
-		SELECT 'Money (Positive Value Only)', 'dbo.money_strict';
+		SELECT 'Money (Positive Value Only)', 'numeric(30, 6)';
 	END IF;
 
 	IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Date') THEN

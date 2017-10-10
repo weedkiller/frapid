@@ -1,13 +1,14 @@
 using System;
 using Frapid.DataAccess;
-using Frapid.NPoco;
+using Frapid.Mapper.Decorators;
 
 namespace Frapid.Messaging.DTO
 {
     [TableName("config.email_queue")]
-    public sealed class EmailQueue: IPoco
+    public sealed class EmailQueue : IPoco
     {
         public long QueueId { get; set; }
+        public string ApplicationName { get; set; }
         public string FromName { get; set; }
         public string FromEmail { get; set; }
         public string ReplyTo { get; set; }

@@ -21,7 +21,7 @@ namespace Frapid.ApplicationState.Cache
 
         public static async Task<LoginView> SetCurrentLoginAsync(string tenant, long loginId)
         {
-            if(loginId <= 0)
+            if (loginId <= 0)
             {
                 return new LoginView();
             }
@@ -32,7 +32,7 @@ namespace Frapid.ApplicationState.Cache
 
             var login = factory.Get<LoginView>(key);
 
-            if(login != null)
+            if (login != null)
             {
                 return login;
             }
@@ -50,25 +50,25 @@ namespace Frapid.ApplicationState.Cache
 
         public static LoginView GetCurrent(string tenant = "")
         {
-            return GetCurrentAsync(tenant).Result;
+            return GetCurrentAsync(tenant).GetAwaiter().GetResult();
         }
 
         public static LoginView GetCurrent(string tenant, long loginId)
         {
-            return GetCurrentAsync(tenant, loginId).Result;
+            return GetCurrentAsync(tenant, loginId).GetAwaiter().GetResult();
         }
 
         public static async Task<LoginView> GetCurrentAsync(string tenant = "")
         {
             var context = FrapidHttpContext.GetCurrent();
-            if(string.IsNullOrWhiteSpace(tenant))
+            if (string.IsNullOrWhiteSpace(tenant))
             {
                 tenant = GetTenant();
             }
 
             long loginId = 0;
 
-            if(context.User != null)
+            if (context.User != null)
             {
                 long.TryParse(context.User.Identity.Name, out loginId);
             }
@@ -78,7 +78,7 @@ namespace Frapid.ApplicationState.Cache
 
         public static async Task<LoginView> GetCurrentAsync(string tenant, long loginId)
         {
-            if(loginId == 0)
+            if (loginId == 0)
             {
                 return new LoginView();
             }
@@ -89,7 +89,7 @@ namespace Frapid.ApplicationState.Cache
 
             var login = factory.Get<LoginView>(key);
 
-            var view =  login ?? await SetCurrentLoginAsync(tenant, loginId).ConfigureAwait(false);
+            var view = login ?? await SetCurrentLoginAsync(tenant, loginId).ConfigureAwait(false);
 
             await UpdateActivityAsync(tenant, view.UserId.To<int>(), view.IpAddress, view.Browser).ConfigureAwait(false);
 
@@ -110,7 +110,7 @@ namespace Frapid.ApplicationState.Cache
         {
             var dictionary = new Dictionary<string, object>();
 
-            if(metaLogin == null)
+            if (metaLogin == null)
             {
                 return dictionary;
             }
@@ -118,6 +118,7 @@ namespace Frapid.ApplicationState.Cache
             dictionary.Add("Database", database);
             dictionary.Add("Culture", metaLogin.Culture);
             dictionary.Add("Email", metaLogin.Email);
+            dictionary.Add("OfficeEmail", metaLogin.OfficeEmail);
             dictionary.Add("Office", metaLogin.Office);
             dictionary.Add("OfficeId", metaLogin.OfficeId);
             dictionary.Add("OfficeCode", metaLogin.OfficeCode);
@@ -136,7 +137,6 @@ namespace Frapid.ApplicationState.Cache
             dictionary.Add("CurrencyCode", metaLogin.CurrencyCode);
             dictionary.Add("Phone", metaLogin.Phone);
             dictionary.Add("Fax", metaLogin.Fax);
-            dictionary.Add("HasVat", metaLogin.HasVat);
             dictionary.Add("IsAdministrator", metaLogin.IsAdministrator);
             dictionary.Add("LastSeenOn", metaLogin.LastSeenOn);
             dictionary.Add("LoginTimestamp", metaLogin.LoginTimestamp);

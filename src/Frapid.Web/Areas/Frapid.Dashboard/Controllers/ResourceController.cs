@@ -4,18 +4,16 @@ using System.Web;
 using System.Web.Hosting;
 using System.Web.Mvc;
 using System.Web.UI;
-using Frapid.ApplicationState.Cache;
 using Frapid.Areas;
-using Frapid.Areas.Authorization;
 using Frapid.Areas.Caching;
 
 namespace Frapid.Dashboard.Controllers
 {
-    [RestrictAnonymous]
+    [AllowAnonymous]
     public class ResourceController : FrapidController
     {
+        [FileOutputCache(Duration = 60*60*24, Location = OutputCacheLocation.Any)]
         [Route("dashboard/resources/{*resource}")]
-        [FileOutputCache(Duration = 60 * 60 * 24, Location = OutputCacheLocation.Client)]
         public ActionResult Get(string resource = "")
         {
             if (string.IsNullOrWhiteSpace(resource))

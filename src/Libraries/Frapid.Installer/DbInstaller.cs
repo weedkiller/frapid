@@ -36,10 +36,11 @@ namespace Frapid.Installer
                 if (IsDevelopment())
                 {
                     InstallerLog.Verbose("Cleaning up the database.");
-                    await this.CleanUpDbAsync();
+                    await this.CleanUpDbAsync().ConfigureAwait(true);
                 }
                 else
                 {
+                    InstallerLog.Information("Warning: database already exists. Please remove the database first.");
                     InstallerLog.Verbose($"No need to create database \"{this.Tenant}\" because it already exists.");
                 }
             }

@@ -10,6 +10,8 @@
 	"RealeasedOn": null,
 	"Description": "Frapid website builder module.",
 	"Category": "Core Modules",
+	"Hasi18N": true,
+	"I18NClassName": "Resources",
 	"Bundle": "Frapid Framework",
     "IsMeta": false,
 	"DbSchema": "website",
@@ -18,7 +20,7 @@
     "PatchFilePath" : null,
 	"InstallSample": true,
 	"My": null,
-	"OverrideTemplatePath": "~/Areas/Frapid.WebsiteBuilder/Override",
+	"OverrideTemplatePath": "~/Areas/Frapid.WebsiteBuilder/Overrides",
     "OverrideDestination":"~/Tenants/{0}/Areas",
 	"DependsOn": ["Frapid", "Frapid.Config"]
 }

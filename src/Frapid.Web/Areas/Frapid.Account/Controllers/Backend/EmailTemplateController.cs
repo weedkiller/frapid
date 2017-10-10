@@ -2,7 +2,6 @@ using System.IO;
 using System.Text;
 using System.Web.Mvc;
 using Frapid.Account.ViewModels;
-using Frapid.Areas.Authorization;
 using Frapid.Areas.CSRF;
 using Frapid.Dashboard;
 using Frapid.Dashboard.Controllers;
@@ -13,7 +12,6 @@ namespace Frapid.Account.Controllers.Backend
     public class EmailTemplateController : DashboardController
     {
         [Route("dashboard/account/email-templates/{file}")]
-        [RestrictAnonymous]
         [MenuPolicy]
         public ActionResult Index(string file)
         {
@@ -33,7 +31,6 @@ namespace Frapid.Account.Controllers.Backend
         }
 
         [Route("dashboard/account/email-templates")]
-        [RestrictAnonymous]
         [HttpPost]
         public ActionResult Save(Template model)
         {
@@ -52,7 +49,7 @@ namespace Frapid.Account.Controllers.Backend
             string path = Configuration.GetOverridePath(this.Tenant) + "/EmailTemplates/" + file;
             if (System.IO.File.Exists(path))
             {
-                System.IO.File.WriteAllText(path, contents, Encoding.UTF8);
+                System.IO.File.WriteAllText(path, contents, new UTF8Encoding(false));
             }
         }
     }

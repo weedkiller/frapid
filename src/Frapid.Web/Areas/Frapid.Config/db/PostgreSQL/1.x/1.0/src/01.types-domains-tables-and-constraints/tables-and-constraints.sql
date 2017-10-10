@@ -50,6 +50,7 @@ CREATE TABLE config.smtp_configs
 CREATE TABLE config.email_queue
 (
     queue_id                                    BIGSERIAL NOT NULL PRIMARY KEY,
+    application_name                            national character varying(256),
     from_name                                   national character varying(256) NOT NULL,
     from_email                                  national character varying(256) NOT NULL,
     reply_to                                    national character varying(256) NOT NULL,
@@ -57,6 +58,28 @@ CREATE TABLE config.email_queue
     subject                                     national character varying(256) NOT NULL,
     send_to                                     national character varying(256) NOT NULL,
     attachments                                 text,
+    message                                     text NOT NULL,
+    added_on                                    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT(NOW()),
+	send_on										TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT(NOW()),
+    delivered                                   boolean NOT NULL DEFAULT(false),
+    delivered_on                                TIMESTAMP WITH TIME ZONE,
+    canceled                                    boolean NOT NULL DEFAULT(false),
+    canceled_on                                 TIMESTAMP WITH TIME ZONE,
+	is_test										boolean NOT NULL DEFAULT(false),
+    audit_user_id                           	integer REFERENCES account.users,
+    audit_ts                                	TIMESTAMP WITH TIME ZONE DEFAULT(NOW()),
+	deleted										boolean DEFAULT(false)
+);
+
+
+CREATE TABLE config.sms_queue
+(
+    queue_id                                    BIGSERIAL NOT NULL PRIMARY KEY,
+    application_name                            national character varying(256),
+    from_name                                   national character varying(256) NOT NULL,
+    from_number                                 national character varying(256) NOT NULL,
+    subject                                     national character varying(256) NOT NULL,
+    send_to                                     national character varying(256) NOT NULL,
     message                                     text NOT NULL,
     added_on                                    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT(NOW()),
 	send_on										TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT(NOW()),
@@ -130,39 +153,6 @@ CREATE TABLE config.custom_field_setup
     audit_ts                                	TIMESTAMP WITH TIME ZONE DEFAULT(NOW()),
 	deleted										boolean DEFAULT(false)
 );
-
-
-CREATE TABLE config.flag_types
-(
-    flag_type_id                                SERIAL PRIMARY KEY,
-    flag_type_name                              national character varying(24) NOT NULL,
-    background_color                            color NOT NULL,
-    foreground_color                            color NOT NULL,
-    audit_user_id                               integer NULL REFERENCES account.users,
-    audit_ts                                	TIMESTAMP WITH TIME ZONE DEFAULT(NOW()),
-	deleted										boolean DEFAULT(false)
-);
-
-COMMENT ON TABLE config.flag_types IS 'Flags are used by users to mark transactions. The flags created by a user is not visible to others.';
-
-CREATE TABLE config.flags
-(
-    flag_id                                     BIGSERIAL PRIMARY KEY,
-    user_id                                     integer NOT NULL REFERENCES account.users,
-    flag_type_id                                integer NOT NULL REFERENCES config.flag_types(flag_type_id),
-    resource                                    text, --Fully qualified resource name. Example: transactions.non_gl_stock_master.
-    resource_key                                text, --The unique identifier for lookup. Example: non_gl_stock_master_id,
-    resource_id                                 text, --The value of the unique identifier to lookup for,
-    flagged_on                                  TIMESTAMP WITH TIME ZONE 
-                                                DEFAULT(NOW()),
-    audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	TIMESTAMP WITH TIME ZONE DEFAULT(NOW()),
-	deleted										boolean DEFAULT(false)
-);
-
-CREATE UNIQUE INDEX flags_user_id_resource_resource_id_uix
-ON config.flags(user_id, UPPER(resource), UPPER(resource_key), UPPER(resource_id))
-WHERE NOT deleted;
 
 CREATE TABLE config.custom_fields
 (

@@ -42,7 +42,7 @@ namespace Frapid.Reports.Helpers
                     {
                         if (dataSource.Data.Columns.Contains(column))
                         {
-                            string value = dataSource.Data.Rows[0][column].ToString();
+                            string value = FormattingHelper.GetFormattedValue(dataSource.Data.Rows[0][column]);
                             expression = expression.Replace(word, value);
                         }
                     }
@@ -67,7 +67,7 @@ namespace Frapid.Reports.Helpers
                 var cache = new DefaultCacheFactory();
                 var dictionary = cache.Get<Dictionary<string, object>>(cacheKey);
 
-                if (dictionary !=null && dictionary.ContainsKey(key))
+                if (dictionary != null && dictionary.ContainsKey(key))
                 {
                     var value = dictionary?[key];
 
@@ -83,7 +83,7 @@ namespace Frapid.Reports.Helpers
 
         private static string GetLogo()
         {
-            return AppUsers.GetCurrent().Logo;
+            return AppUsers.GetCurrent().Logo.Or("/Static/images/logo-sm.png");
         }
 
         public static string GetCurrentDomainName()
@@ -113,6 +113,7 @@ namespace Frapid.Reports.Helpers
 
 
             string logo = GetLogo();
+
             if (!string.IsNullOrWhiteSpace(logo))
             {
                 //Or else logo will not be exported into excel.
@@ -148,41 +149,41 @@ namespace Frapid.Reports.Helpers
                     {
                         string value = FormattingHelper.GetFormattedValue(parameter.Value);
 
-                        var datasourceParameter =
-                            info.DataSourceParameters.FirstOrDefault(
-                                x => x.Name.Replace("@", "").ToLower().Equals(parameter.Name.ToLower()));
+                        var datasourceParameter = info.DataSourceParameters.FirstOrDefault(x => x.Name.Replace("@", "").ToLower().Equals(parameter.Name.ToLower()));
 
                         if (datasourceParameter != null)
                         {
-                            var type = datasourceParameter.Type;
+                            string type = datasourceParameter.Type;
                             value = DataSourceParameterHelper.CastValue(value, type).ToString();
                         }
 
                         expression = expression.Replace(word, value);
                     }
                 }
-                else if (word.StartsWith("{Resources.", StringComparison.OrdinalIgnoreCase))
+                else if (word.StartsWith("{i18n.", StringComparison.OrdinalIgnoreCase))
                 {
                     string res = RemoveBraces(word);
                     var resource = res.Split('.');
 
-                    string key = resource[2];
+                    string key = resource[1];
 
-                    expression = expression.Replace(word, ResourceManager.GetString(tenant, resource[1], key));
+                    expression = expression.Replace(word, LocalizationHelper.Localize(key, false));
                 }
-                else if (word.StartsWith("{DataSource", StringComparison.OrdinalIgnoreCase) &&
-                         word.ToLower(CultureInfo.InvariantCulture).Contains("runningtotalfieldvalue"))
+                else if (word.StartsWith("{DataSource", StringComparison.OrdinalIgnoreCase) && word.ToLower(CultureInfo.InvariantCulture).Contains("runningtotalfieldvalue"))
                 {
+                    if (dataSources == null)
+                    {
+                        return null;
+                    }
+
                     string res = RemoveBraces(word);
                     var resource = res.Split('.');
 
-                    int dataSourceIndex =
-                        resource[0].ToLower(CultureInfo.InvariantCulture)
+                    int dataSourceIndex = resource[0].ToLower(CultureInfo.InvariantCulture)
                             .Replace("datasource", "")
                             .Replace("[", "")
                             .Replace("]", "").To<int>();
-                    int index =
-                        resource[1].ToLower(CultureInfo.InvariantCulture)
+                    int index = resource[1].ToLower(CultureInfo.InvariantCulture)
                             .Replace("runningtotalfieldvalue", "")
                             .Replace("[", "")
                             .Replace("]", "").To<int>();

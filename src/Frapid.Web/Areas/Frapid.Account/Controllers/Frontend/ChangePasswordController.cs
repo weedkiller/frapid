@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using System.Web.Mvc;
 using Frapid.Account.InputModels;
-using Frapid.Account.Models;
+using Frapid.Account.Models.Frontend;
 using Frapid.Areas;
 using Frapid.Areas.Authorization;
 using Frapid.Areas.CSRF;
@@ -29,7 +29,7 @@ namespace Frapid.Account.Controllers.Frontend
         [HttpPost]
         public async Task<ActionResult> PostAsync(ChangePassword model)
         {
-            if (!ModelState.IsValid)
+            if (!this.ModelState.IsValid)
             {
                 return this.InvalidModelState(this.ModelState);
             }

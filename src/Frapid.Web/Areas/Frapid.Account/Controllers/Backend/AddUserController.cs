@@ -2,19 +2,22 @@
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Mvc;
+using Frapid.Account.DAL;
 using Frapid.Account.ViewModels;
 using Frapid.ApplicationState.Cache;
-using Frapid.Areas.Authorization;
+using Frapid.Areas.CSRF;
 using Frapid.Dashboard;
 using Frapid.Dashboard.Controllers;
+using Frapid.DataAccess.Models;
 
 namespace Frapid.Account.Controllers.Backend
 {
+    [AntiForgery]
     public class AddUserController : DashboardController
     {
         [Route("dashboard/account/user/add")]
-        [RestrictAnonymous]
         [MenuPolicy]
+        [AccessPolicy("account", "users", AccessTypeEnum.Read)]
         public ActionResult Add()
         {
             if (!AppUsers.GetCurrent().IsAdministrator)
@@ -26,8 +29,8 @@ namespace Frapid.Account.Controllers.Backend
         }
 
         [Route("dashboard/account/user/add")]
-        [RestrictAnonymous]
         [HttpPost]
+        [AccessPolicy("account", "users", AccessTypeEnum.Create)]
         public async Task<ActionResult> AddAsync(UserInfo model)
         {
             var user = await AppUsers.GetCurrentAsync(this.Tenant).ConfigureAwait(true);
@@ -45,12 +48,12 @@ namespace Frapid.Account.Controllers.Backend
 
             if (model.Password != model.ConfirmPassword)
             {
-                return this.Failed("Confirm password does not match with the supplied password", HttpStatusCode.BadRequest);
+                return this.Failed(I18N.ConfirmPasswordDoesNotMatch, HttpStatusCode.BadRequest);
             }
 
             try
             {
-                await DAL.Users.CreateUserAsync(this.Tenant, user.UserId, model).ConfigureAwait(true);
+                await Users.CreateUserAsync(this.Tenant, user.UserId, model).ConfigureAwait(true);
                 return this.Ok("OK");
             }
             catch (Exception ex)

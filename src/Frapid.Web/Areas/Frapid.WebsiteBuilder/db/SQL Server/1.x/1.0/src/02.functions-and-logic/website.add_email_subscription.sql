@@ -3,8 +3,6 @@ DROP PROCEDURE website.add_email_subscription;
 
 GO
 
-
-
 CREATE PROCEDURE website.add_email_subscription
 (
     @email                                  national character varying(500)
@@ -12,6 +10,7 @@ CREATE PROCEDURE website.add_email_subscription
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     IF NOT EXISTS
     (

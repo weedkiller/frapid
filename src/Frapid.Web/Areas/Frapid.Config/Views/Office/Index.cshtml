@@ -1,14 +1,14 @@
 ﻿@model dynamic
 
 @{
-    ViewBag.Title = "Offices";
+    ViewBag.Title = I18N.Offices;
     Layout = ViewBag.Layout;
 }
 
 <script>
     var scrudFactory = new Object();
 
-    scrudFactory.title = "Offices";
+    scrudFactory.title = window.translate("Offices");
 
     scrudFactory.viewAPI = "/api/views/core/office-scrud-view";
     scrudFactory.viewTableName = "core.office_scrud_view";
@@ -16,7 +16,8 @@
     scrudFactory.formAPI = "/api/forms/core/offices";
     scrudFactory.formTableName = "core.offices";
 
-    scrudFactory.excludedColumns = ["audit_user_id", "audit_ts"];
+    scrudFactory.excludedColumns = ["AuditUserId", "AuditTs", "Deleted"];
+
 
     scrudFactory.uploadHanlder = "/dashboard/config/services/attachments";
 
@@ -34,8 +35,7 @@
     ];
 
 
-
-    scrudFactory.keys = [        
+    scrudFactory.keys = [
         {
             property: "ParentOfficeId",
             url: '/api/forms/core/offices/display-fields',
@@ -45,8 +45,8 @@
         }
     ];
 
-    $.get('/ScrudFactory/View.html', function (view) {
-        $.get('/ScrudFactory/Form.html', function (form) {
+    $.get('/ScrudFactory/View.html', function(view) {
+        $.get('/ScrudFactory/Form.html', function(form) {
             $("#ScrudFactoryView").html(view);
             $("#ScrudFactoryForm").html(form);
             $.cachedScript("/assets/js/scrudfactory-view.js");

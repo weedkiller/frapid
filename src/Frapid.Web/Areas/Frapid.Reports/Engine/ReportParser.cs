@@ -6,9 +6,6 @@ namespace Frapid.Reports.Engine
 {
     public sealed class ReportParser
     {
-        public string Path { get; set; }
-        private Report Report { get; }
-
         public ReportParser(string path, string tenant, List<Parameter> parameters)
         {
             this.Path = path;
@@ -20,12 +17,16 @@ namespace Frapid.Reports.Engine
             };
         }
 
+        public string Path { get; set; }
+        private Report Report { get; }
+
 
         public Report Get()
         {
             this.Report.HasHeader = this.HasHeader();
             this.Report.Path = this.Path;
             this.Report.Title = this.GetTitle();
+            this.Report.Script = this.GetScript();
             this.Report.TopSection = this.GetTopSection();
             this.Report.Body = this.GetBody();
             this.Report.BottomSection = this.GetBottomSection();
@@ -44,6 +45,12 @@ namespace Frapid.Reports.Engine
         private string GetTitle()
         {
             var parser = new TitleParser(this.Path);
+            return parser.Get();
+        }
+
+        private string GetScript()
+        {
+            var parser = new ScriptParser(this.Path);
             return parser.Get();
         }
 

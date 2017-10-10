@@ -15,7 +15,7 @@ CREATE TABLE website.configurations
 	blog_description							    national character varying(500),	
 	is_default                                      bit NOT NULL DEFAULT(1),
     audit_user_id                                   integer REFERENCES account.users,
-    audit_ts                                		DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                		DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted											bit DEFAULT(0)
 );
 
@@ -37,7 +37,7 @@ CREATE TABLE website.email_subscriptions
     subscribed_on                               datetimeoffset DEFAULT(getutcdate()),    
     unsubscribed_on                             datetimeoffset,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -49,7 +49,7 @@ CREATE TABLE website.categories
     seo_description                             national character varying(100),
 	is_blog										bit NOT NULL DEFAULT(0),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)    
 );
 
@@ -72,7 +72,7 @@ CREATE TABLE website.contents
     seo_description                             national character varying(1000) NOT NULL DEFAULT(''),
     is_homepage                                 bit NOT NULL DEFAULT(0),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)    
 );
 
@@ -82,7 +82,7 @@ CREATE TABLE website.menus
     menu_name                                   national character varying(100),
     description                                 national character varying(500),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -101,7 +101,7 @@ CREATE TABLE website.menu_items
     content_id                                  integer REFERENCES website.contents,
 	parent_menu_item_id							integer REFERENCES website.menu_items,
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0));
 
 
@@ -125,7 +125,7 @@ CREATE TABLE website.contacts
     sort                                        integer NOT NULL DEFAULT(0),
     status                                      bit NOT NULL DEFAULT(1),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)    
 );
 
@@ -135,8 +135,6 @@ DROP PROCEDURE website.add_email_subscription;
 
 GO
 
-
-
 CREATE PROCEDURE website.add_email_subscription
 (
     @email                                  national character varying(500)
@@ -144,6 +142,7 @@ CREATE PROCEDURE website.add_email_subscription
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     IF NOT EXISTS
     (
@@ -173,6 +172,9 @@ GO
 CREATE PROCEDURE website.add_hit(@category_alias national character varying(250), @alias national character varying(500))
 AS
 BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
 	IF(COALESCE(@alias, '') = '' AND COALESCE(@category_alias, '') = '')
 	BEGIN
 		UPDATE website.contents SET hits = COALESCE(website.contents.hits, 0) + 1 
@@ -182,8 +184,7 @@ BEGIN
 	END;
 
 	UPDATE website.contents SET hits = COALESCE(website.contents.hits, 0) + 1 
-	WHERE website.contents.content_id
-	=
+	WHERE website.contents.content_id =
 	(
 		SELECT website.published_content_view.content_id 
 		FROM website.published_content_view
@@ -236,6 +237,30 @@ END;
 GO
 
 
+-->-->-- src/Frapid.Web/Areas/Frapid.WebsiteBuilder/db/SQL Server/1.x/1.0/src/02.functions-and-logic/website.get_menu_id_by_menu_name.sql --<--<--
+IF OBJECT_ID('website.get_menu_id_by_menu_name') IS NOT NULL
+DROP FUNCTION website.get_menu_id_by_menu_name;
+
+GO
+
+CREATE FUNCTION website.get_menu_id_by_menu_name(@menu_name national character varying(500))
+RETURNS integer
+AS
+BEGIN
+    RETURN
+    (
+		SELECT menu_id
+		FROM website.menus
+		WHERE menu_name = @menu_name
+		AND website.menus.deleted = 0
+	);
+END;
+
+GO
+
+--SELECT website.get_menu_id_by_menu_name('Default');
+
+
 -->-->-- src/Frapid.Web/Areas/Frapid.WebsiteBuilder/db/SQL Server/1.x/1.0/src/02.functions-and-logic/website.remove_email_subscription.sql --<--<--
 IF OBJECT_ID('website.remove_email_subscription') IS NOT NULL
 DROP PROCEDURE website.remove_email_subscription;
@@ -250,6 +275,7 @@ CREATE PROCEDURE website.remove_email_subscription
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     IF EXISTS
     (
@@ -275,20 +301,22 @@ GO
 
 
 -->-->-- src/Frapid.Web/Areas/Frapid.WebsiteBuilder/db/SQL Server/1.x/1.0/src/03.menus/menus.sql --<--<--
-EXECUTE core.create_app 'Frapid.WebsiteBuilder', 'Website', '1.0', 'MixERP Inc.', 'December 1, 2015', 'world blue', '/dashboard/website/contents', null;
+EXECUTE core.create_app 'Frapid.WebsiteBuilder', 'Website', 'Website', '1.0', 'MixERP Inc.', 'December 1, 2015', 'world blue', '/dashboard/website/contents', null;
 
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Tasks', '', 'tasks icon', '';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Configuration', '/dashboard/website/configuration', 'configure icon', 'Tasks';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Manage Categories', '/dashboard/website/categories', 'sitemap icon', 'Tasks';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Add New Content', '/dashboard/website/contents/new', 'file', 'Tasks';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'View Contents', '/dashboard/website/contents', 'desktop', 'Tasks';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Menus', '/dashboard/website/menus', 'star', 'Tasks';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Contacts', '/dashboard/website/contacts', 'phone', 'Tasks';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Subscriptions', '/dashboard/website/subscriptions', 'newspaper', 'Tasks';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Layout Manager', '/dashboard/website/layouts', 'grid layout', '';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Email Templates', '', 'mail', '';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Subscription Added', '/dashboard/website/subscription/welcome', 'plus circle', 'Email Templates';
-EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Subscription Removed', '/dashboard/website/subscription/removed', 'minus circle', 'Email Templates';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Tasks', 'Tasks', '', 'tasks icon', '';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Configuration', 'Configuration', '/dashboard/website/configuration', 'configure icon', 'Tasks';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'ManageCategories', 'Manage Categories', '/dashboard/website/categories', 'sitemap icon', 'Tasks';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'AddNewContent', 'Add a New Content', '/dashboard/website/contents/new', 'file', 'Tasks';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'ViewContents', 'View Contents', '/dashboard/website/contents', 'desktop', 'Tasks';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'AddNewBlogPost', 'Add a New Blog Post', '/dashboard/website/blogs/new', 'write', 'Tasks';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'ViewBlogPosts', 'View Blog Posts', '/dashboard/website/blogs', 'browser', 'Tasks';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Menus', 'Menus', '/dashboard/website/menus', 'star', 'Tasks';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Contacts', 'Contacts', '/dashboard/website/contacts', 'phone', 'Tasks';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'Subscriptions', 'Subscriptions', '/dashboard/website/subscriptions', 'newspaper', 'Tasks';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'LayoutManager', 'Layout Manager', '/dashboard/website/layouts', 'grid layout', '';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'EmailTemplates', 'Email Templates', '', 'mail', '';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'SubscriptionAdded', 'Subscription Added', '/dashboard/website/subscription/welcome', 'plus circle', 'Email Templates';
+EXECUTE core.create_menu 'Frapid.WebsiteBuilder', 'SubscriptionRemoved', 'Subscription Removed', '/dashboard/website/subscription/removed', 'minus circle', 'Email Templates';
 
 GO
 
@@ -318,6 +346,29 @@ EXECUTE auth.create_app_menu_policy
 '{*}';
 
 
+
+GO
+
+
+-->-->-- src/Frapid.Web/Areas/Frapid.WebsiteBuilder/db/SQL Server/1.x/1.0/src/05.scrud-views/website.blog_scrud_view.sql --<--<--
+IF OBJECT_ID('website.blog_scrud_view') IS NOT NULL
+DROP VIEW website.blog_scrud_view;
+
+GO
+CREATE VIEW website.blog_scrud_view
+AS
+SELECT
+	website.contents.content_id AS blog_id,
+	website.contents.title,
+	website.categories.category_name,
+	website.contents.alias,
+	website.contents.is_draft,
+	website.contents.publish_on
+FROM website.contents
+INNER JOIN website.categories
+ON website.categories.category_id = website.contents.category_id
+WHERE website.contents.deleted = 0
+AND website.categories.is_blog = 1;
 
 GO
 
@@ -354,14 +405,14 @@ SELECT
 	website.contents.content_id,
 	website.contents.title,
 	website.categories.category_name,
-	website.categories.is_blog,
 	website.contents.alias,
 	website.contents.is_draft,
 	website.contents.publish_on
 FROM website.contents
 INNER JOIN website.categories
 ON website.categories.category_id = website.contents.category_id
-WHERE website.contents.deleted = 0;
+WHERE website.contents.deleted = 0
+AND website.categories.is_blog = 0;
 
 GO
 
@@ -401,6 +452,7 @@ AFTER UPDATE
 AS
 BEGIN
 	SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 	
 	IF @@NESTLEVEL > 1
 	BEGIN
@@ -432,6 +484,23 @@ END;
 GO
 
 
+-->-->-- src/Frapid.Web/Areas/Frapid.WebsiteBuilder/db/SQL Server/1.x/1.0/src/05.views/website.blog_category_view.sql --<--<--
+IF OBJECT_ID('website.blog_category_view') IS NOT NULL
+DROP VIEW website.blog_category_view;
+
+GO
+
+CREATE VIEW website.blog_category_view
+AS
+SELECT
+    website.categories.category_id          AS blog_category_id,
+    website.categories.category_name        AS blog_category_name
+FROM website.categories
+WHERE website.categories.deleted = 0
+AND website.categories.is_blog = 1;
+
+GO
+
 -->-->-- src/Frapid.Web/Areas/Frapid.WebsiteBuilder/db/SQL Server/1.x/1.0/src/05.views/website.email_subscription_insert_view.sql --<--<--
 IF OBJECT_ID('website.email_subscription_insert_view') IS NOT NULL
 DROP VIEW website.email_subscription_insert_view;
@@ -450,6 +519,7 @@ INSTEAD OF INSERT
 AS
 BEGIN
 	SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 	
 	INSERT INTO website.email_subscriptions
 	(
@@ -574,6 +644,24 @@ FROM tags;
 
 GO
 
+-->-->-- src/Frapid.Web/Areas/Frapid.WebsiteBuilder/db/SQL Server/1.x/1.0/src/05.views/website.website_category_view.sql --<--<--
+IF OBJECT_ID('website.website_category_view') IS NOT NULL
+DROP VIEW website.website_category_view;
+
+GO
+
+CREATE VIEW website.website_category_view
+AS
+SELECT
+    website.categories.category_id          AS website_category_id,
+    website.categories.category_name        AS website_category_name
+FROM website.categories
+WHERE website.categories.deleted = 0
+AND website.categories.is_blog = 0;
+
+GO
+
+
 -->-->-- src/Frapid.Web/Areas/Frapid.WebsiteBuilder/db/SQL Server/1.x/1.0/src/05.views/website.yesterdays_email_subscriptions.sql --<--<--
 IF OBJECT_ID('website.yesterdays_email_subscriptions') IS NOT NULL
 DROP VIEW website.yesterdays_email_subscriptions;
@@ -632,3 +720,26 @@ GO
 
 EXEC sp_addrolemember  @rolename = 'db_datareader', @membername  = 'report_user'
 GO
+
+DECLARE @proc sysname
+DECLARE @cmd varchar(8000)
+
+DECLARE cur CURSOR FOR 
+SELECT '[' + schema_name(schema_id) + '].[' + name + ']' FROM sys.objects
+WHERE type IN('FN')
+AND is_ms_shipped = 0
+ORDER BY 1
+OPEN cur
+FETCH next from cur into @proc
+WHILE @@FETCH_STATUS = 0
+BEGIN
+     SET @cmd = 'GRANT EXEC ON ' + @proc + ' TO report_user';
+     EXEC (@cmd)
+
+     FETCH next from cur into @proc
+END
+CLOSE cur
+DEALLOCATE cur
+
+GO
+

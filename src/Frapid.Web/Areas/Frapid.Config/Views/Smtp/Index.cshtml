@@ -1,14 +1,14 @@
 ﻿@model dynamic
 
 @{
-    ViewBag.Title = "SMTP Configuration";
+    ViewBag.Title = I18N.SMTPConfiguration;
     Layout = ViewBag.Layout;
 }
 
 <script>
     var scrudFactory = new Object();
 
-    scrudFactory.title = "SMTP Configuration";
+    scrudFactory.title = window.translate("SmtpConfiguration");
 
     scrudFactory.viewAPI = "/api/views/config/smtp-config-scrud-view";
     scrudFactory.viewTableName = "config.smtp_config_scrud_view";
@@ -16,7 +16,8 @@
     scrudFactory.formAPI = "/api/forms/config/smtp-configs";
     scrudFactory.formTableName = "config.smtp_configs";
 
-    scrudFactory.excludedColumns = ["audit_user_id", "audit_ts"];
+    scrudFactory.excludedColumns = ["AuditUserId", "AuditTs", "Deleted"];
+
 
     scrudFactory.allowDelete = true;
     scrudFactory.allowEdit = true;

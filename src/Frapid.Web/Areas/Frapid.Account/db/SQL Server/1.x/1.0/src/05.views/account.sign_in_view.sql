@@ -32,6 +32,7 @@ SELECT
     core.offices.state,
     core.offices.zip_code,
     core.offices.country,
+    core.offices.email AS office_email,
     core.offices.phone,
     core.offices.fax,
     core.offices.url,
@@ -40,7 +41,6 @@ SELECT
     core.currencies.currency_symbol,
     core.currencies.hundredth_name,
     core.offices.pan_number,
-    core.offices.has_vat,
     account.users.last_seen_on
 FROM account.logins
 INNER JOIN account.users

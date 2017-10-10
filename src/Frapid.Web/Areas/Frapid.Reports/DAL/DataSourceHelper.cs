@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using Frapid.Configuration;
-using Frapid.Reports.Engine;
+using Frapid.DataAccess.Extensions;
 using Frapid.Reports.Engine.Model;
 using Frapid.Reports.Helpers;
 using Npgsql;
@@ -15,13 +14,13 @@ namespace Frapid.Reports.DAL
         public static DataTable GetDataTable(string tenant, string sql, ParameterInfo parameters)
         {
             /**************************************************************************************
-            A MixERP report is a developer-only feature.
+            A Frapid report is a developer-only feature.
             But, that does not guarantee that there will be no misuse.
             So, the possible risk factor cannot be ignored altogether in this context.
             Therefore, a review for defense against possible
             SQL Injection Attacks is absolutely required here.
 
-            Although, we connect to PostgreSQL Database Server using a login "report_user"
+            Please do note that you should connect to Database Server using a login "report_user"
             which has a read-only access for executing the SQL statements to produce the report.
 
             The SQL query is expected to have only the SELECT statement, but there is no
@@ -55,7 +54,7 @@ namespace Frapid.Reports.DAL
             return GetSqlServerDataTable(connectionString, sql, parameters);
         }
 
-        private static object GetParameterValue(string name, DataSourceParameterType type, ParameterInfo info)
+        private static object GetParameterValue(string name, string type, ParameterInfo info)
         {
             var paramter = info.Parameters.FirstOrDefault(x => x.Name.ToLower().Equals(name.Replace("@", "").ToLower()));
 
@@ -84,11 +83,12 @@ namespace Frapid.Reports.DAL
             {
                 using (var command = new NpgsqlCommand(sql, connection))
                 {
+                    command.CommandTimeout = 900;//15 minutes
                     if (info.DataSourceParameters != null)
                     {
                         foreach (var p in info.DataSourceParameters)
                         {
-                            command.Parameters.AddWithValue(p.Name, GetParameterValue(p.Name, p.Type, info));
+                            command.Parameters.AddWithNullableValue(p.Name, GetParameterValue(p.Name, p.Type, info));
                         }
                     }
 
@@ -109,11 +109,12 @@ namespace Frapid.Reports.DAL
             {
                 using (var command = new SqlCommand(sql, connection))
                 {
+                    command.CommandTimeout = 900;//15 minutes
                     if (info.DataSourceParameters != null)
                     {
                         foreach (var p in info.DataSourceParameters)
                         {
-                            command.Parameters.AddWithValue(p.Name, GetParameterValue(p.Name, p.Type, info));
+                            command.Parameters.AddWithNullableValue(p.Name, GetParameterValue(p.Name, p.Type, info));
                         }
                     }
 

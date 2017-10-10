@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using System.Web.Mvc;
 using Frapid.Account.DAL;
 using Frapid.Account.Emails;
-using Frapid.Account.Models;
+using Frapid.Account.Models.Frontend;
 using Frapid.Account.ViewModels;
 using Frapid.Areas;
 using Frapid.Areas.CSRF;
@@ -87,7 +87,7 @@ namespace Frapid.Account.Controllers.Frontend
         [AllowAnonymous]
         public async Task<ActionResult> PostAsync(Registration model)
         {
-            bool result = await SignUpModel.SignUpAsync(this.Tenant, model, this.RemoteUser).ConfigureAwait(true);
+            bool result = await SignUpModel.SignUpAsync(this.HttpContext, this.Tenant, model, this.RemoteUser).ConfigureAwait(true);
             return this.Ok(result);
         }
     }

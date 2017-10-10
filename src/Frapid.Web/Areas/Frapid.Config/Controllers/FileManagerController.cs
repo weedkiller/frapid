@@ -5,8 +5,8 @@ using System.Web;
 using System.Web.Hosting;
 using System.Web.Mvc;
 using Frapid.Areas.Authorization;
+using Frapid.Areas.CSRF;
 using Frapid.Config.Models;
-using Frapid.Configuration;
 using Frapid.Dashboard;
 using Frapid.Dashboard.Controllers;
 using Newtonsoft.Json;
@@ -14,10 +14,10 @@ using Newtonsoft.Json.Serialization;
 
 namespace Frapid.Config.Controllers
 {
+    [AntiForgery]
     public class FileManagerController : DashboardController
     {
         [Route("dashboard/config/file-manager")]
-        [RestrictAnonymous]
         [MenuPolicy]
         public ActionResult Index()
         {
@@ -25,7 +25,6 @@ namespace Frapid.Config.Controllers
         }
 
         [Route("dashboard/config/file-manager/resources")]
-        [RestrictAnonymous]
         public ActionResult GetResources()
         {
             string path = $"~/Tenants/{this.Tenant}/";
@@ -33,20 +32,19 @@ namespace Frapid.Config.Controllers
 
             if (path == null || !Directory.Exists(path))
             {
-                return this.Failed("Path not found", HttpStatusCode.NotFound);
+                return this.Failed(I18N.PathNotFound, HttpStatusCode.NotFound);
             }
 
             var resource = FileManagerResource.Get(path);
             resource = FileManagerResource.NormalizePath(path, resource);
 
             string json = JsonConvert.SerializeObject(resource, Formatting.None,
-                new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                new JsonSerializerSettings {ContractResolver = new CamelCasePropertyNamesContractResolver()});
 
             return this.Content(json, "application/json");
         }
 
         [Route("dashboard/config/file-manager/resources/edit/file")]
-        [RestrictAnonymous]
         [HttpPut]
         public ActionResult EditFile(string themeName, string container, string file, string contents)
         {
@@ -54,7 +52,6 @@ namespace Frapid.Config.Controllers
         }
 
         [Route("dashboard/config/file-manager/create/file")]
-        [RestrictAnonymous]
         [HttpPut]
         public ActionResult CreateFile(string container, string file, string contents)
         {
@@ -62,7 +59,6 @@ namespace Frapid.Config.Controllers
         }
 
         [Route("dashboard/config/file-manager/create/folder")]
-        [RestrictAnonymous]
         [HttpPut]
         public ActionResult CreateFolder(string container, string folder)
         {
@@ -70,7 +66,6 @@ namespace Frapid.Config.Controllers
         }
 
         [Route("dashboard/config/file-manager/delete")]
-        [RestrictAnonymous]
         [HttpDelete]
         public ActionResult DeleteResource(string resource)
         {
@@ -117,19 +112,18 @@ namespace Frapid.Config.Controllers
         }
 
         [Route("dashboard/config/file-manager/resources/upload")]
-        [RestrictAnonymous]
         [HttpPost]
         public ActionResult UploadResource(string container)
         {
             if (this.Request.Files.Count > 1)
             {
-                return this.Failed("Only single file may be uploaded", HttpStatusCode.BadRequest);
+                return this.Failed(I18N.OnlyASingleFileMayBeUploaded, HttpStatusCode.BadRequest);
             }
 
             var file = this.Request.Files[0];
             if (file == null)
             {
-                return this.Failed("No file was uploaded", HttpStatusCode.BadRequest);
+                return this.Failed(I18N.NoFileWasUploaded, HttpStatusCode.BadRequest);
             }
 
             try
@@ -146,7 +140,6 @@ namespace Frapid.Config.Controllers
         }
 
         [Route("dashboard/config/file-manager/blob")]
-        [RestrictAnonymous]
         public ActionResult GetBinary(string file)
         {
             if (string.IsNullOrWhiteSpace(file))
@@ -167,7 +160,6 @@ namespace Frapid.Config.Controllers
 
 
         [Route("dashboard/config/file-manager/{*resource}")]
-        [RestrictAnonymous]
         public ActionResult Get(string resource = "")
         {
             if (string.IsNullOrWhiteSpace(resource))

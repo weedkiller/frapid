@@ -4,21 +4,21 @@ using System.Web.Mvc;
 using Frapid.Areas;
 using Frapid.Areas.Authorization;
 using Frapid.Dashboard.DAL;
-using Frapid.i18n;
+using Frapid.DataAccess.Models;
 
 namespace Frapid.Dashboard.Controllers
 {
     public class AppController : FrapidController
     {
-        [Route("dashboard/my/apps")]
         [RestrictAnonymous]
+        [Route("dashboard/my/apps")]
+        [AccessPolicy("core", "apps", AccessTypeEnum.Read)]
         public async Task<ActionResult> GetAppsAsync()
         {
             int userId = this.AppUser.UserId;
             int officeId = this.AppUser.OfficeId;
 
-            string culture = CultureManager.GetCurrent().TwoLetterISOLanguageName;
-            var awaiter = await App.GetAsync(this.Tenant, userId, officeId, culture).ConfigureAwait(false);
+            var awaiter = await Apps.GetAsync(this.Tenant, userId, officeId).ConfigureAwait(false);
             var apps = awaiter.OrderBy(x => x.AppId);
 
             return this.Ok(apps);

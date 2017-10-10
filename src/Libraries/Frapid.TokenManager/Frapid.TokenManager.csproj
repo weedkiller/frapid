@@ -30,17 +30,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="jose-jwt, Version=1.9.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\jose-jwt.1.9.2\lib\4.0\jose-jwt.dll</HintPath>
+    <Reference Include="jose-jwt, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\jose-jwt.2.1.0\lib\net40\jose-jwt.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Web.Mvc">
       <HintPath>..\..\packages\Microsoft.AspNet.Mvc.5.2.3\lib\net45\System.Web.Mvc.dll</HintPath>
     </Reference>
@@ -54,6 +55,7 @@
   <ItemGroup>
     <Compile Include="Config.cs" />
     <Compile Include="DAL\AccessTokens.cs" />
+    <Compile Include="DTO\AccessToken.cs" />
     <Compile Include="DTO\Claim.cs" />
     <Compile Include="AppUser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -66,6 +68,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Frapid.ApplicationState\Frapid.ApplicationState.csproj">
+      <Project>{EF3D84F8-3D64-45D7-9050-3AE204F5AA72}</Project>
+      <Name>Frapid.ApplicationState</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Frapid.Configuration\Frapid.Configuration.csproj">
       <Project>{CA3C3D39-6775-4234-B343-38F0724ADCF8}</Project>
       <Name>Frapid.Configuration</Name>

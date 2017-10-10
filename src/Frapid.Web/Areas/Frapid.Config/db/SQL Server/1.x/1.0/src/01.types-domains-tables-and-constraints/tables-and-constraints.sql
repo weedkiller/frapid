@@ -12,7 +12,7 @@ CREATE TABLE config.kanbans
     kanban_name                                 national character varying(128) NOT NULL,
     description                                 national character varying(500),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 CREATE TABLE config.kanban_details
@@ -22,7 +22,7 @@ CREATE TABLE config.kanban_details
     rating                                      smallint CHECK(rating>=0 AND rating<=5),
     resource_id                                 national character varying(128) NOT NULL,
     audit_user_id                               integer NULL REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)    
 );
 
@@ -45,7 +45,7 @@ CREATE TABLE config.smtp_configs
     smtp_password                               national character varying(256) NOT NULL,
     smtp_port                                   integer NOT NULL DEFAULT(587),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -53,6 +53,7 @@ CREATE TABLE config.smtp_configs
 CREATE TABLE config.email_queue
 (
     queue_id                                    bigint IDENTITY NOT NULL PRIMARY KEY,
+    application_name                            national character varying(256),
     from_name                                   national character varying(256) NOT NULL,
     from_email                                  national character varying(256) NOT NULL,
     reply_to                                    national character varying(256) NOT NULL,
@@ -69,7 +70,28 @@ CREATE TABLE config.email_queue
     canceled_on                                 datetimeoffset,
 	is_test										bit NOT NULL DEFAULT(0),
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
+	deleted										bit DEFAULT(0)
+);
+
+CREATE TABLE config.sms_queue
+(
+    queue_id                                    bigint IDENTITY NOT NULL PRIMARY KEY,
+    application_name                            national character varying(256),
+    from_name                                   national character varying(256) NOT NULL,
+    from_number                                 national character varying(256) NOT NULL,
+    subject                                     national character varying(256) NOT NULL,
+    send_to                                     national character varying(256) NOT NULL,
+    message                                     national character varying(MAX) NOT NULL,
+    added_on                                    datetimeoffset NOT NULL DEFAULT(getutcdate()),
+	send_on										datetimeoffset NOT NULL DEFAULT(getutcdate()),
+    delivered                                   bit NOT NULL DEFAULT(0),
+    delivered_on                                datetimeoffset,
+    canceled                                    bit NOT NULL DEFAULT(0),
+    canceled_on                                 datetimeoffset,
+	is_test										bit NOT NULL DEFAULT(0),
+    audit_user_id                           	integer REFERENCES account.users,
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -88,7 +110,7 @@ CREATE TABLE config.filters
     filter_value                                national character varying(500),
     filter_and_value                            national character varying(500),
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -101,7 +123,7 @@ CREATE TABLE config.custom_field_data_types
     data_type                                   national character varying(50) NOT NULL PRIMARY KEY,
 	underlying_type								national character varying(500) NOT NULL,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -111,7 +133,7 @@ CREATE TABLE config.custom_field_forms
     table_name                                  national character varying(500) NOT NULL UNIQUE,
     key_name                                    national character varying(500) NOT NULL,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -130,7 +152,7 @@ CREATE TABLE config.custom_field_setup
                                                 REFERENCES config.custom_field_data_types,
     description                                 national character varying(500) NOT NULL,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -142,41 +164,9 @@ CREATE TABLE config.custom_fields
     resource_id                                 national character varying(500) NOT NULL,
     value                                       national character varying(MAX),
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
-
-
-CREATE TABLE config.flag_types
-(
-    flag_type_id                                integer IDENTITY PRIMARY KEY,
-    flag_type_name                              national character varying(24) NOT NULL,
-    background_color                            color NOT NULL,
-    foreground_color                            color NOT NULL,
-    audit_user_id                               integer NULL REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
-	deleted										bit DEFAULT(0)
-);
-
-
-CREATE TABLE config.flags
-(
-    flag_id                                     bigint IDENTITY PRIMARY KEY,
-    user_id                                     integer NOT NULL REFERENCES account.users,
-    flag_type_id                                integer NOT NULL REFERENCES config.flag_types(flag_type_id),
-    resource                                    national character varying(500), --Fully qualified resource name. Example: transactions.non_gl_stock_master.
-    resource_key                                national character varying(500), --The unique identifier for lookup. Example: non_gl_stock_master_id,
-    resource_id                                 national character varying(500), --The value of the unique identifier to lookup for,
-    flagged_on                                  datetimeoffset NULL 
-                                                DEFAULT(getutcdate()),
-    audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
-	deleted										bit DEFAULT(0)
-);
-
-CREATE UNIQUE INDEX flags_user_id_resource_resource_id_uix
-ON config.flags(user_id, resource, resource_key, resource_id)
-WHERE deleted = 0;
 
 
 GO

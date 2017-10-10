@@ -11,7 +11,7 @@ CREATE TABLE account.roles
     role_name									national character varying(100) NOT NULL UNIQUE,
     is_administrator							bit NOT NULL DEFAULT(0),
     audit_user_id								integer,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -21,7 +21,7 @@ CREATE TABLE account.installed_domains
     domain_name									national character varying(500),
     admin_email									national character varying(500),
     audit_user_id                           	integer,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -45,7 +45,7 @@ CREATE TABLE account.configuration_profiles
     facebook_app_id								national character varying(500),
     facebook_scope								national character varying(500),
     audit_user_id								integer,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -68,7 +68,7 @@ CREATE TABLE account.registrations
     confirmed									bit DEFAULT(0),
     confirmed_on								datetimeoffset,
     audit_user_id                           	integer,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -91,7 +91,7 @@ CREATE TABLE account.users
 	last_ip										national character varying(500),
 	last_browser								national character varying(500),
     audit_user_id								integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -119,7 +119,7 @@ CREATE TABLE account.reset_requests
     confirmed									bit DEFAULT(0),
     confirmed_on								datetimeoffset,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -132,7 +132,7 @@ CREATE TABLE account.fb_access_tokens
     fb_user_id									national character varying(500),
     token										national character varying(MAX),
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -142,7 +142,7 @@ CREATE TABLE account.google_access_tokens
     user_id										integer PRIMARY KEY REFERENCES account.users,
     token										national character varying(MAX),
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -157,7 +157,7 @@ CREATE TABLE account.logins
     login_timestamp								datetimeoffset NOT NULL DEFAULT(getutcdate()),
     culture										national character varying(12) NOT NULL,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -180,7 +180,7 @@ CREATE TABLE account.applications
     redirect_url                                national character varying(500),
     app_secret                                  national character varying(500) UNIQUE,
     audit_user_id                               integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -208,7 +208,7 @@ CREATE TABLE account.access_tokens
     revoked_by                                  integer REFERENCES account.users,
     revoked_on                                  datetimeoffset,
     audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETDATE()),
+    audit_ts                                	DATETIMEOFFSET NULL DEFAULT(GETUTCDATE()),
 	deleted										bit DEFAULT(0)
 );
 
@@ -228,6 +228,7 @@ CREATE PROCEDURE account.add_installed_domain
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     IF EXISTS
     (
@@ -342,7 +343,6 @@ DROP PROCEDURE account.complete_reset;
 
 GO
 
-
 CREATE PROCEDURE account.complete_reset
 (
     @request_id                     uniqueidentifier,
@@ -351,28 +351,54 @@ CREATE PROCEDURE account.complete_reset
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @user_id                integer;
     DECLARE @email                  national character varying(500);
 
-    SELECT
-        @user_id = account.users.user_id,
-        @email = account.users.email
-    FROM account.reset_requests
-    INNER JOIN account.users
-    ON account.users.user_id = account.reset_requests.user_id
-    WHERE account.reset_requests.request_id = @request_id
-    AND expires_on >= getutcdate()
-	AND account.reset_requests.deleted = 0;
+    BEGIN TRY
+        DECLARE @tran_count int = @@TRANCOUNT;
+        
+        IF(@tran_count= 0)
+        BEGIN
+            BEGIN TRANSACTION
+        END;
 
-    
-    UPDATE account.users
-    SET
-        password = @password
-    WHERE user_id = @user_id;
+        SELECT
+            @user_id = account.users.user_id,
+            @email = account.users.email
+        FROM account.reset_requests
+        INNER JOIN account.users
+        ON account.users.user_id = account.reset_requests.user_id
+        WHERE account.reset_requests.request_id = @request_id
+        AND expires_on >= getutcdate()
+    	AND account.reset_requests.deleted = 0;
 
-    UPDATE account.reset_requests
-    SET confirmed = 1, confirmed_on = getutcdate();
+        
+        UPDATE account.users
+        SET
+            password = @password
+        WHERE user_id = @user_id;
+
+        UPDATE account.reset_requests
+        SET confirmed = 1, confirmed_on = getutcdate();
+
+        IF(@tran_count = 0)
+        BEGIN
+            COMMIT TRANSACTION;
+        END;
+    END TRY
+    BEGIN CATCH
+        IF(XACT_STATE() <> 0 AND @tran_count = 0) 
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        DECLARE @ErrorMessage national character varying(4000)  = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity int                              = ERROR_SEVERITY();
+        DECLARE @ErrorState int                                 = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH;
 END;
 
 
@@ -384,46 +410,73 @@ DROP PROCEDURE account.confirm_registration;
 
 GO
 
-
 CREATE PROCEDURE account.confirm_registration(@token uniqueidentifier)
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @can_confirm        bit;
     DECLARE @office_id          integer;
     DECLARE @role_id            integer;
 
-    SET @can_confirm = account.can_confirm_registration(@token);
+    BEGIN TRY
+        DECLARE @tran_count int = @@TRANCOUNT;
+        
+        IF(@tran_count= 0)
+        BEGIN
+            BEGIN TRANSACTION
+        END;
+        
+        SET @can_confirm = account.can_confirm_registration(@token);
 
-    IF(@can_confirm = 0)
-    BEGIN
-        SELECT 0;
-        RETURN;
-    END;
+        IF(@can_confirm = 0)
+        BEGIN
+            SELECT 0;
+            RETURN;
+        END;
 
-    SELECT
-    TOP 1
-        @office_id = registration_office_id        
-    FROM account.configuration_profiles
-    WHERE is_active = 1;
+        SELECT
+        TOP 1
+            @office_id = registration_office_id        
+        FROM account.configuration_profiles
+        WHERE is_active = 1;
 
-    INSERT INTO account.users(email, password, office_id, role_id, name, phone)
-    SELECT email, password, @office_id, account.get_registration_role_id(email), name, phone
-    FROM account.registrations
-    WHERE registration_id = @token
-	AND confirmed = 0;
+        INSERT INTO account.users(email, password, office_id, role_id, name, phone)
+        SELECT email, password, @office_id, account.get_registration_role_id(email), name, phone
+        FROM account.registrations
+        WHERE registration_id = @token
+    	AND confirmed = 0;
 
-    UPDATE account.registrations
-    SET 
-        confirmed = 1, 
-        confirmed_on = getutcdate()
-    WHERE registration_id = @token;
+        UPDATE account.registrations
+        SET 
+            confirmed = 1, 
+            confirmed_on = getutcdate()
+        WHERE registration_id = @token;
     
-    SELECT 1;
+
+        IF(@tran_count = 0)
+        BEGIN
+            COMMIT TRANSACTION;
+        END;
+
+        SELECT 1;
+    END TRY
+    BEGIN CATCH
+        IF(XACT_STATE() <> 0 AND @tran_count = 0) 
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        DECLARE @ErrorMessage national character varying(4000)  = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity int                              = ERROR_SEVERITY();
+        DECLARE @ErrorState int                                 = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH;
 END;
 
 GO
+
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Account/db/SQL Server/1.x/1.0/src/02.functions-and-logic/account.email_exists.sql --<--<--
 IF OBJECT_ID('account.email_exists') IS NOT NULL
@@ -482,89 +535,115 @@ CREATE PROCEDURE account.fb_sign_in
 AS
 BEGIN
     SET NOCOUNT ON;
-
-	DECLARE @result TABLE
-	(
-		login_id                                bigint,
-		status                                  bit,
-		message                                 national character varying(500)
-	);
+    SET XACT_ABORT ON;
 	
     DECLARE @user_id                        integer;
     DECLARE @login_id                       bigint;
     DECLARE @auto_register                  bit = 0;
 
-    IF(COALESCE(@office_id, 0) = 0)
-    BEGIN
-        IF(SELECT COUNT(*) FROM core.offices) = 1
-        BEGIN
-            SELECT @office_id = office_id
-            FROM core.offices;
-        END;
-    END;
+    DECLARE @result TABLE
+    (
+        login_id                            bigint,
+        status                              bit,
+        message                             national character varying(500)
+    );
 
-    IF account.is_restricted_user(@email) = 1
-    BEGIN
-        --LOGIN IS RESTRICTED TO THIS USER
-        INSERT INTO @result
-        SELECT CAST(NULL AS bigint), 0, 'Access is denied';
-		
-		SELECT * FROM @result;
-        RETURN;
-    END;
-
-    SELECT @user_id = user_id
-    FROM account.users
-    WHERE account.users.email = @email;
-
-    IF account.user_exists(@email) = 0 AND account.can_register_with_facebook() = 1
-    BEGIN
-        INSERT INTO account.users(role_id, office_id, email, name)
-        SELECT account.get_registration_role_id(@email), account.get_registration_office_id(), @email, @name;
+    BEGIN TRY
+        DECLARE @tran_count int = @@TRANCOUNT;
         
-        SET @user_id = SCOPE_IDENTITY();
-    END;
+        IF(@tran_count= 0)
+        BEGIN
+            BEGIN TRANSACTION
+        END;
+        
+        IF(COALESCE(@office_id, 0) = 0)
+        BEGIN
+            IF(SELECT COUNT(*) FROM core.offices) = 1
+            BEGIN
+                SELECT @office_id = office_id
+                FROM core.offices;
+            END;
+        END;
 
-    IF account.fb_user_exists(@user_id) = 0
-    BEGIN
-        INSERT INTO account.fb_access_tokens(user_id, fb_user_id, token)
-        SELECT COALESCE(@user_id, account.get_user_id_by_email(@email)), @fb_user_id, @token;
-    END
-    ELSE
-    BEGIN
-        UPDATE account.fb_access_tokens
-        SET token = @token
-        WHERE user_id = @user_id;    
-    END;
+        IF account.is_restricted_user(@email) = 1
+        BEGIN
+            --LOGIN IS RESTRICTED TO THIS USER
+            INSERT INTO @result
+            SELECT CAST(NULL AS bigint), 0, 'Access is denied';
+    		
+    		SELECT * FROM @result;
+            RETURN;
+        END;
 
-    IF(@user_id IS NULL)
-    BEGIN
         SELECT @user_id = user_id
         FROM account.users
         WHERE account.users.email = @email;
-    END;
-    
-	UPDATE account.logins 
-	SET is_active = 0 
-	WHERE user_id=@user_id 
-	AND office_id = @office_id 
-	AND browser = @browser
-	AND ip_address = @ip_address;
 
-    INSERT INTO account.logins(user_id, office_id, browser, ip_address, login_timestamp, culture)
-    SELECT @user_id, @office_id, @browser, @ip_address, getutcdate(), COALESCE(@culture, '');
+        IF account.user_exists(@email) = 0 AND account.can_register_with_facebook() = 1
+        BEGIN
+            INSERT INTO account.users(role_id, office_id, email, name)
+            SELECT account.get_registration_role_id(@email), account.get_registration_office_id(), @email, @name;
+            
+            SET @user_id = SCOPE_IDENTITY();
+        END;
 
-    SET @login_id = SCOPE_IDENTITY();
-	
-    INSERT INTO @result
-    SELECT @login_id, 1, 'Welcome';
+        IF account.fb_user_exists(@user_id) = 0
+        BEGIN
+            INSERT INTO account.fb_access_tokens(user_id, fb_user_id, token)
+            SELECT COALESCE(@user_id, account.get_user_id_by_email(@email)), @fb_user_id, @token;
+        END
+        ELSE
+        BEGIN
+            UPDATE account.fb_access_tokens
+            SET token = @token
+            WHERE user_id = @user_id;    
+        END;
 
-	SELECT * FROM @result;
-    RETURN;    
+        IF(@user_id IS NULL)
+        BEGIN
+            SELECT @user_id = user_id
+            FROM account.users
+            WHERE account.users.email = @email;
+        END;
+        
+    	UPDATE account.logins 
+    	SET is_active = 0 
+    	WHERE user_id=@user_id 
+    	AND office_id = @office_id 
+    	AND browser = @browser
+    	AND ip_address = @ip_address;
+
+        INSERT INTO account.logins(user_id, office_id, browser, ip_address, login_timestamp, culture)
+        SELECT @user_id, @office_id, @browser, @ip_address, getutcdate(), COALESCE(@culture, '');
+
+        SET @login_id = SCOPE_IDENTITY();
+    	
+        INSERT INTO @result
+        SELECT @login_id, 1, 'Welcome';
+
+    	SELECT * FROM @result;
+                
+        IF(@tran_count = 0)
+        BEGIN
+            COMMIT TRANSACTION;
+        END;
+    END TRY
+    BEGIN CATCH
+        IF(XACT_STATE() <> 0 AND @tran_count = 0) 
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        DECLARE @ErrorMessage national character varying(4000)  = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity int                              = ERROR_SEVERITY();
+        DECLARE @ErrorState int                                 = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH;
 END;
 
 
 GO
+
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Account/db/SQL Server/1.x/1.0/src/02.functions-and-logic/account.fb_user_exists.sql --<--<--
 IF OBJECT_ID('account.fb_user_exists') IS NOT NULL
@@ -639,6 +718,28 @@ END;
 
 GO
 
+-->-->-- src/Frapid.Web/Areas/Frapid.Account/db/SQL Server/1.x/1.0/src/02.functions-and-logic/account.get_office_id_by_login_id.sql --<--<--
+IF OBJECT_ID('account.get_office_id_by_login_id') IS NOT NULL
+DROP FUNCTION account.get_office_id_by_login_id;
+
+GO
+
+CREATE FUNCTION account.get_office_id_by_login_id(@login_id bigint)
+RETURNS integer
+AS
+BEGIN
+	RETURN
+	(
+		SELECT account.logins.office_id 
+		FROM account.logins
+		WHERE account.logins.login_id = @login_id
+	);
+END;
+
+GO
+
+--SELECT account.get_office_id_by_login_id(1);
+
 -->-->-- src/Frapid.Web/Areas/Frapid.Account/db/SQL Server/1.x/1.0/src/02.functions-and-logic/account.get_registration_office_id.sql --<--<--
 IF OBJECT_ID('account.get_registration_office_id') IS NOT NULL
 DROP FUNCTION account.get_registration_office_id;
@@ -709,6 +810,28 @@ END;
 
 GO
 
+-->-->-- src/Frapid.Web/Areas/Frapid.Account/db/SQL Server/1.x/1.0/src/02.functions-and-logic/account.get_role_name_by_role_id.sql --<--<--
+IF OBJECT_ID('account.get_role_name_by_role_id') IS NOT NULL
+DROP FUNCTION account.get_role_name_by_role_id;
+
+GO
+
+CREATE FUNCTION account.get_role_name_by_role_id(@role_id integer)
+RETURNS national character varying(100)
+AS
+BEGIN
+    RETURN
+    (
+        SELECT account.roles.role_name
+        FROM account.roles
+        WHERE account.roles.role_id = @role_id
+    );
+END
+
+GO
+
+--SELECT account.get_role_name_by_role_id(9999);
+
 -->-->-- src/Frapid.Web/Areas/Frapid.Account/db/SQL Server/1.x/1.0/src/02.functions-and-logic/account.get_user_id_by_email.sql --<--<--
 IF OBJECT_ID('account.get_user_id_by_email') IS NOT NULL
 DROP FUNCTION account.get_user_id_by_email;
@@ -776,78 +899,102 @@ CREATE PROCEDURE account.google_sign_in
 AS
 BEGIN    
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @user_id                        integer;
     DECLARE @login_id                       bigint;
-
 	DECLARE @result TABLE
 	(
-		login_id                                bigint,
-		status                                  bit,
-		message                                 text
+		login_id                            bigint,
+		status                              bit,
+		message                             text
 	);
 
 
-    IF(COALESCE(@office_id, 0) = 0)
-    BEGIN
-        IF(SELECT COUNT(*) FROM core.offices) = 1
+    BEGIN TRY
+        DECLARE @tran_count int = @@TRANCOUNT;
+        
+        IF(@tran_count= 0)
         BEGIN
-            SELECT @office_id = office_id
-            FROM core.offices;
+            BEGIN TRANSACTION
         END;
-    END;
 
-    IF account.is_restricted_user(@email) = 1
-    BEGIN
-        --LOGIN IS RESTRICTED TO THIS USER
+        IF(COALESCE(@office_id, 0) = 0)
+        BEGIN
+            IF(SELECT COUNT(*) FROM core.offices) = 1
+            BEGIN
+                SELECT @office_id = office_id
+                FROM core.offices;
+            END;
+        END;
+
+        IF account.is_restricted_user(@email) = 1
+        BEGIN
+            --LOGIN IS RESTRICTED TO THIS USER
+            INSERT INTO @result
+            SELECT CAST(NULL AS bigint), 0, 'Access is denied';
+    		
+    		SELECT * FROM @result;
+            RETURN;
+        END;
+
+        IF account.user_exists(@email) = 0 AND account.can_register_with_google() = 1
+        BEGIN
+            INSERT INTO account.users(role_id, office_id, email, name)
+            SELECT account.get_registration_role_id(@email), account.get_registration_office_id(), @email, @name;
+
+            SET @user_id = SCOPE_IDENTITY();
+        END;
+
+        SELECT @user_id = user_id
+        FROM account.users
+        WHERE account.users.email = @email;
+
+        IF account.google_user_exists(@user_id) = 0
+        BEGIN
+            INSERT INTO account.google_access_tokens(user_id, token)
+            SELECT COALESCE(@user_id, account.get_user_id_by_email(@email)), @token;
+    	END
+        ELSE
+        BEGIN
+            UPDATE account.google_access_tokens
+            SET token = @token
+            WHERE user_id = @user_id;    
+        END;
+
+    	UPDATE account.logins 
+    	SET is_active = 0 
+    	WHERE user_id=@user_id 
+    	AND office_id = @office_id 
+    	AND browser = @browser
+    	AND ip_address = @ip_address;
+
+        INSERT INTO account.logins(user_id, office_id, browser, ip_address, login_timestamp, culture)
+        SELECT @user_id, @office_id, @browser, @ip_address, getutcdate(), COALESCE(@culture, '');
+
+        SET @login_id = SCOPE_IDENTITY();
+
         INSERT INTO @result
-        SELECT CAST(NULL AS bigint), 0, 'Access is denied';
-		
-		SELECT * FROM @result;
-        RETURN;
-    END;
+        SELECT @login_id, 1, 'Welcome';
 
-    IF account.user_exists(@email) = 0 AND account.can_register_with_google() = 1
-    BEGIN
-        INSERT INTO account.users(role_id, office_id, email, name)
-        SELECT account.get_registration_role_id(@email), account.get_registration_office_id(), @email, @name;
+    	SELECT * FROM @result;
+                
+        IF(@tran_count = 0)
+        BEGIN
+            COMMIT TRANSACTION;
+        END;
+    END TRY
+    BEGIN CATCH
+        IF(XACT_STATE() <> 0 AND @tran_count = 0) 
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
 
-        SET @user_id = SCOPE_IDENTITY();
-    END;
-
-    SELECT @user_id = user_id
-    FROM account.users
-    WHERE account.users.email = @email;
-
-    IF account.google_user_exists(@user_id) = 0
-    BEGIN
-        INSERT INTO account.google_access_tokens(user_id, token)
-        SELECT COALESCE(@user_id, account.get_user_id_by_email(@email)), @token;
-	END
-    ELSE
-    BEGIN
-        UPDATE account.google_access_tokens
-        SET token = @token
-        WHERE user_id = @user_id;    
-    END;
-
-	UPDATE account.logins 
-	SET is_active = 0 
-	WHERE user_id=@user_id 
-	AND office_id = @office_id 
-	AND browser = @browser
-	AND ip_address = @ip_address;
-
-    INSERT INTO account.logins(user_id, office_id, browser, ip_address, login_timestamp, culture)
-    SELECT @user_id, @office_id, @browser, @ip_address, getutcdate(), COALESCE(@culture, '');
-
-    SET @login_id = SCOPE_IDENTITY();
-
-    INSERT INTO @result
-    SELECT @login_id, 1, 'Welcome';
-
-	SELECT * FROM @result;
-    RETURN;    
+        DECLARE @ErrorMessage national character varying(4000)  = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity int                              = ERROR_SEVERITY();
+        DECLARE @ErrorState int                                 = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH;
 END;
 
 GO
@@ -1076,50 +1223,74 @@ CREATE PROCEDURE account.reset_account
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
 	DECLARE @request_table_variable			TABLE(request_id uniqueidentifier);
     DECLARE @user_id                        integer;
     DECLARE @name                           national character varying(500);
     DECLARE @expires_on                     datetimeoffset = dateadd(d, 1, getutcdate());
 
-    IF(account.user_exists(@email) = 0 OR account.is_restricted_user(@email) = 1)
-    BEGIN
-        RETURN;
-    END;
-
-    SELECT
-        @user_id = user_id,
-        @name = name
-    FROM account.users
-    WHERE email = @email
-	AND account.users.deleted = 0;
-
-    IF account.has_active_reset_request(@email) = 1
-    BEGIN
-        SELECT 
-        TOP 1
-        * FROM account.reset_requests
-        WHERE email = @email
-        AND expires_on <= @expires_on
-		AND account.reset_requests.deleted = 0;
+    BEGIN TRY
+        DECLARE @tran_count int = @@TRANCOUNT;
         
-        RETURN;
-    END;
+        IF(@tran_count= 0)
+        BEGIN
+            BEGIN TRANSACTION
+        END;
 
-    INSERT INTO account.reset_requests(user_id, email, name, browser, ip_address, expires_on)
-    OUTPUT INSERTED.request_id INTO @request_table_variable
-    SELECT @user_id, @email, @name, @browser, @ip_address, @expires_on
+        IF(account.user_exists(@email) = 0 OR account.is_restricted_user(@email) = 1)
+        BEGIN
+            RETURN;
+        END;
+
+        SELECT
+            @user_id = user_id,
+            @name = name
+        FROM account.users
+        WHERE email = @email
+    	AND account.users.deleted = 0;
+
+        IF account.has_active_reset_request(@email) = 1
+        BEGIN
+            SELECT 
+            TOP 1
+            * FROM account.reset_requests
+            WHERE email = @email
+            AND expires_on <= @expires_on
+    		AND account.reset_requests.deleted = 0;
+            
+            RETURN;
+        END;
+
+        INSERT INTO account.reset_requests(user_id, email, name, browser, ip_address, expires_on)
+        OUTPUT INSERTED.request_id INTO @request_table_variable
+        SELECT @user_id, @email, @name, @browser, @ip_address, @expires_on
 
 
-    SELECT *
-    FROM account.reset_requests
-    WHERE request_id = 
-    (
-		SELECT request_id 
-		FROM @request_table_variable
-	);
+        SELECT *
+        FROM account.reset_requests
+        WHERE request_id = 
+        (
+    		SELECT request_id 
+    		FROM @request_table_variable
+    	);
 
-    RETURN;
+        IF(@tran_count = 0)
+        BEGIN
+            COMMIT TRANSACTION;
+        END;
+    END TRY
+    BEGIN CATCH
+        IF(XACT_STATE() <> 0 AND @tran_count = 0) 
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        DECLARE @ErrorMessage national character varying(4000)  = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity int                              = ERROR_SEVERITY();
+        DECLARE @ErrorState int                                 = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH;
 END;
 
 
@@ -1144,61 +1315,86 @@ CREATE PROCEDURE account.sign_in
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @login_id                       bigint;
     DECLARE @user_id                        integer;
 
 	DECLARE @result TABLE
 	(
-		login_id                                bigint,
-		status                                  bit,
-		message                                 national character varying(100)
+		login_id                            bigint,
+		status                              bit,
+		message                             national character varying(100)
 	);
 
 
-    IF(COALESCE(@office_id, 0) = 0)
-    BEGIN
-        IF(SELECT COUNT(*) FROM core.offices) = 1
+    BEGIN TRY
+        DECLARE @tran_count int = @@TRANCOUNT;
+        
+        IF(@tran_count= 0)
         BEGIN
-            SELECT @office_id = office_id
-            FROM core.offices;
+            BEGIN TRANSACTION
         END;
-    END;
+        
+        IF(COALESCE(@office_id, 0) = 0)
+        BEGIN
+            IF(SELECT COUNT(*) FROM core.offices) = 1
+            BEGIN
+                SELECT @office_id = office_id
+                FROM core.offices;
+            END;
+        END;
 
-    IF account.is_restricted_user(@email) = 1
-    BEGIN
-		INSERT INTO @result
-        SELECT CAST(NULL AS bigint), 0, 'Access is denied';
+        IF account.is_restricted_user(@email) = 1
+        BEGIN
+    		INSERT INTO @result
+            SELECT CAST(NULL AS bigint), 0, 'Access is denied';
 
-		SELECT * FROM @result;
-        RETURN;
-    END;
+    		SELECT * FROM @result;
+            RETURN;
+        END;
 
-    SELECT @user_id = user_id 
-    FROM account.users
-    WHERE email = @email;
+        SELECT @user_id = user_id 
+        FROM account.users
+        WHERE email = @email;
 
-	UPDATE account.logins 
-	SET is_active = 0 
-	WHERE user_id=@user_id 
-	AND office_id = @office_id 
-	AND browser = @browser
-	AND ip_address = @ip_address;
+    	UPDATE account.logins 
+    	SET is_active = 0 
+    	WHERE user_id=@user_id 
+    	AND office_id = @office_id 
+    	AND browser = @browser
+    	AND ip_address = @ip_address;
 
-    INSERT INTO account.logins(user_id, office_id, browser, ip_address, login_timestamp, culture)
-    SELECT @user_id, @office_id, @browser, @ip_address, getutcdate(), COALESCE(@culture, '');
+        INSERT INTO account.logins(user_id, office_id, browser, ip_address, login_timestamp, culture)
+        SELECT @user_id, @office_id, @browser, @ip_address, getutcdate(), COALESCE(@culture, '');
 
-    SET @login_id = SCOPE_IDENTITY();
-    
-	INSERT INTO @result
-    SELECT @login_id, 1, 'Welcome';
+        SET @login_id = SCOPE_IDENTITY();
+        
+    	INSERT INTO @result
+        SELECT @login_id, 1, 'Welcome';
 
-	SELECT * FROM @result;
-    RETURN;    
+    	SELECT * FROM @result;
+
+        IF(@tran_count = 0)
+        BEGIN
+            COMMIT TRANSACTION;
+        END;
+    END TRY
+    BEGIN CATCH
+        IF(XACT_STATE() <> 0 AND @tran_count = 0) 
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        DECLARE @ErrorMessage national character varying(4000)  = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity int                              = ERROR_SEVERITY();
+        DECLARE @ErrorState int                                 = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH;
 END;
 
-
 GO
+
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Account/db/SQL Server/1.x/1.0/src/02.functions-and-logic/account.user_exists.sql --<--<--
 IF OBJECT_ID('account.user_exists') IS NOT NULL
@@ -1245,6 +1441,7 @@ INSTEAD OF INSERT
 AS
 BEGIN
 	SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 	
 	DECLARE @ip_address national character varying(100);
 	DECLARE @user_agent national character varying(500);
@@ -1270,21 +1467,21 @@ END;
 GO
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Account/db/SQL Server/1.x/1.0/src/03.menus/menus.sql --<--<--
-EXECUTE core.create_app 'Frapid.Account', 'Account', '1.0', 'MixERP Inc.', 'December 1, 2015', 'grey lock', '/dashboard/account/configuration-profile', NULL;
+EXECUTE core.create_app 'Frapid.Account', 'Account', 'Account', '1.0', 'MixERP Inc.', 'December 1, 2015', 'grey lock', '/dashboard/account/user/list', NULL;
 
-EXECUTE core.create_menu 'Frapid.Account', 'Roles', '/dashboard/account/roles', 'users', '';
+EXECUTE core.create_menu 'Frapid.Account', 'Roles', 'Roles', '/dashboard/account/roles', 'users', '';
 
-EXECUTE core.create_menu 'Frapid.Account', 'Users', '', 'user', '';
-EXECUTE core.create_menu 'Frapid.Account', 'Add New User', '/dashboard/account/user/add', 'user', 'Users';
-EXECUTE core.create_menu 'Frapid.Account', 'Change Password', '/dashboard/account/user/change-password', 'user', 'Users';
-EXECUTE core.create_menu 'Frapid.Account', 'List Users', '/dashboard/account/user/list', 'user', 'Users';
+EXECUTE core.create_menu 'Frapid.Account', 'Users', 'Users', '', 'user', '';
+EXECUTE core.create_menu 'Frapid.Account', 'AddNewUser', 'Add a New User', '/dashboard/account/user/add', 'user', 'Users';
+EXECUTE core.create_menu 'Frapid.Account', 'ChangePassword', 'Change Password', '/dashboard/account/user/change-password', 'user', 'Users';
+EXECUTE core.create_menu 'Frapid.Account', 'ListUsers', 'List Users', '/dashboard/account/user/list', 'user', 'Users';
 
-EXECUTE core.create_menu 'Frapid.Account', 'Configuration Profile', '/dashboard/account/configuration-profile', 'configure', '';
-EXECUTE core.create_menu 'Frapid.Account', 'Email Templates', '', 'mail', '';
-EXECUTE core.create_menu 'Frapid.Account', 'Account Verification', '/dashboard/account/email-templates/account-verification', 'checkmark box', 'Email Templates';
-EXECUTE core.create_menu 'Frapid.Account', 'Password Reset', '/dashboard/account/email-templates/password-reset', 'key', 'Email Templates';
-EXECUTE core.create_menu 'Frapid.Account', 'Welcome Email', '/dashboard/account/email-templates/welcome-email', 'star', 'Email Templates';
-EXECUTE core.create_menu 'Frapid.Account', 'Welcome Email (3rd Party)', '/dashboard/account/email-templates/welcome-email-other', 'star outline', 'Email Templates';
+EXECUTE core.create_menu 'Frapid.Account', 'ConfigurationProfile', 'Configuration Profile', '/dashboard/account/configuration-profile', 'configure', '';
+EXECUTE core.create_menu 'Frapid.Account', 'EmailTemplates', 'Email Templates', '', 'mail', '';
+EXECUTE core.create_menu 'Frapid.Account', 'AccountVerification', 'Account Verification', '/dashboard/account/email-templates/account-verification', 'checkmark box', 'Email Templates';
+EXECUTE core.create_menu 'Frapid.Account', 'PasswordReset', 'Password Reset', '/dashboard/account/email-templates/password-reset', 'key', 'Email Templates';
+EXECUTE core.create_menu 'Frapid.Account', 'WelcomeEmail', 'Welcome Email', '/dashboard/account/email-templates/welcome-email', 'star', 'Email Templates';
+EXECUTE core.create_menu 'Frapid.Account', 'WelcomeEmail3rdParty)', 'Welcome Email (3rd Party)', '/dashboard/account/email-templates/welcome-email-other', 'star outline', 'Email Templates';
 
 
 
@@ -1400,6 +1597,7 @@ SELECT
     core.offices.state,
     core.offices.zip_code,
     core.offices.country,
+    core.offices.email AS office_email,
     core.offices.phone,
     core.offices.fax,
     core.offices.url,
@@ -1408,7 +1606,6 @@ SELECT
     core.currencies.currency_symbol,
     core.currencies.hundredth_name,
     core.offices.pan_number,
-    core.offices.has_vat,
     account.users.last_seen_on
 FROM account.logins
 INNER JOIN account.users
@@ -1429,3 +1626,26 @@ GO
 
 EXEC sp_addrolemember  @rolename = 'db_datareader', @membername  = 'report_user'
 GO
+
+DECLARE @proc sysname
+DECLARE @cmd varchar(8000)
+
+DECLARE cur CURSOR FOR 
+SELECT '[' + schema_name(schema_id) + '].[' + name + ']' FROM sys.objects
+WHERE type IN('FN')
+AND is_ms_shipped = 0
+ORDER BY 1
+OPEN cur
+FETCH next from cur into @proc
+WHILE @@FETCH_STATUS = 0
+BEGIN
+     SET @cmd = 'GRANT EXEC ON ' + @proc + ' TO report_user';
+     EXEC (@cmd)
+
+     FETCH next from cur into @proc
+END
+CLOSE cur
+DEALLOCATE cur
+
+GO
+

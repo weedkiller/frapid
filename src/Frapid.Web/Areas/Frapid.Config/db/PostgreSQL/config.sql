@@ -51,6 +51,7 @@ CREATE TABLE config.smtp_configs
 CREATE TABLE config.email_queue
 (
     queue_id                                    BIGSERIAL NOT NULL PRIMARY KEY,
+    application_name                            national character varying(256),
     from_name                                   national character varying(256) NOT NULL,
     from_email                                  national character varying(256) NOT NULL,
     reply_to                                    national character varying(256) NOT NULL,
@@ -58,6 +59,28 @@ CREATE TABLE config.email_queue
     subject                                     national character varying(256) NOT NULL,
     send_to                                     national character varying(256) NOT NULL,
     attachments                                 text,
+    message                                     text NOT NULL,
+    added_on                                    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT(NOW()),
+	send_on										TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT(NOW()),
+    delivered                                   boolean NOT NULL DEFAULT(false),
+    delivered_on                                TIMESTAMP WITH TIME ZONE,
+    canceled                                    boolean NOT NULL DEFAULT(false),
+    canceled_on                                 TIMESTAMP WITH TIME ZONE,
+	is_test										boolean NOT NULL DEFAULT(false),
+    audit_user_id                           	integer REFERENCES account.users,
+    audit_ts                                	TIMESTAMP WITH TIME ZONE DEFAULT(NOW()),
+	deleted										boolean DEFAULT(false)
+);
+
+
+CREATE TABLE config.sms_queue
+(
+    queue_id                                    BIGSERIAL NOT NULL PRIMARY KEY,
+    application_name                            national character varying(256),
+    from_name                                   national character varying(256) NOT NULL,
+    from_number                                 national character varying(256) NOT NULL,
+    subject                                     national character varying(256) NOT NULL,
+    send_to                                     national character varying(256) NOT NULL,
     message                                     text NOT NULL,
     added_on                                    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT(NOW()),
 	send_on										TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT(NOW()),
@@ -132,39 +155,6 @@ CREATE TABLE config.custom_field_setup
 	deleted										boolean DEFAULT(false)
 );
 
-
-CREATE TABLE config.flag_types
-(
-    flag_type_id                                SERIAL PRIMARY KEY,
-    flag_type_name                              national character varying(24) NOT NULL,
-    background_color                            color NOT NULL,
-    foreground_color                            color NOT NULL,
-    audit_user_id                               integer NULL REFERENCES account.users,
-    audit_ts                                	TIMESTAMP WITH TIME ZONE DEFAULT(NOW()),
-	deleted										boolean DEFAULT(false)
-);
-
-COMMENT ON TABLE config.flag_types IS 'Flags are used by users to mark transactions. The flags created by a user is not visible to others.';
-
-CREATE TABLE config.flags
-(
-    flag_id                                     BIGSERIAL PRIMARY KEY,
-    user_id                                     integer NOT NULL REFERENCES account.users,
-    flag_type_id                                integer NOT NULL REFERENCES config.flag_types(flag_type_id),
-    resource                                    text, --Fully qualified resource name. Example: transactions.non_gl_stock_master.
-    resource_key                                text, --The unique identifier for lookup. Example: non_gl_stock_master_id,
-    resource_id                                 text, --The value of the unique identifier to lookup for,
-    flagged_on                                  TIMESTAMP WITH TIME ZONE 
-                                                DEFAULT(NOW()),
-    audit_user_id                           	integer REFERENCES account.users,
-    audit_ts                                	TIMESTAMP WITH TIME ZONE DEFAULT(NOW()),
-	deleted										boolean DEFAULT(false)
-);
-
-CREATE UNIQUE INDEX flags_user_id_resource_resource_id_uix
-ON config.flags(user_id, UPPER(resource), UPPER(resource_key), UPPER(resource_id))
-WHERE NOT deleted;
-
 CREATE TABLE config.custom_fields
 (
     custom_field_id                             SERIAL PRIMARY KEY,
@@ -196,17 +186,17 @@ BEGIN
 
 	IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Positive Number') THEN
 		INSERT INTO config.custom_field_data_types(data_type, underlying_type)
-		SELECT 'Positive Number', 'dbo.integer_strict';
+		SELECT 'Positive Number', 'integer';
 	END IF;
 
 	IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Money') THEN
 		INSERT INTO config.custom_field_data_types(data_type, underlying_type)
-		SELECT 'Money', 'decimal(24, 4)';
+		SELECT 'Money', 'numeric(30, 6)';
 	END IF;
 
 	IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Money (Positive Value Only)') THEN
 		INSERT INTO config.custom_field_data_types(data_type, underlying_type)
-		SELECT 'Money (Positive Value Only)', 'dbo.money_strict';
+		SELECT 'Money (Positive Value Only)', 'numeric(30, 6)';
 	END IF;
 
 	IF NOT EXISTS(SELECT * FROM config.custom_field_data_types WHERE data_type='Date') THEN
@@ -279,6 +269,30 @@ ON config.custom_field_forms.form_name = config.custom_field_setup.form_name
 WHERE NOT config.custom_field_setup.deleted
 ORDER BY field_order;
 
+-->-->-- src/Frapid.Web/Areas/Frapid.Config/db/PostgreSQL/1.x/1.0/src/05.views/config.custom_field_view.sql --<--<--
+DROP VIEW IF EXISTS config.custom_field_view;
+
+CREATE VIEW config.custom_field_view 
+AS 
+SELECT 
+	custom_field_forms.table_name,
+	custom_field_forms.key_name,
+	custom_field_setup.custom_field_setup_id,
+	custom_field_setup.form_name,
+	custom_field_setup.field_order,
+	custom_field_setup.field_name,
+	custom_field_setup.field_label,
+	custom_field_setup.description,
+	custom_field_data_types.underlying_type,
+	custom_fields.resource_id,
+	custom_fields.value
+FROM config.custom_field_setup
+INNER JOIN config.custom_field_data_types ON custom_field_data_types.data_type = custom_field_setup.data_type
+INNER JOIN config.custom_field_forms ON custom_field_forms.form_name = custom_field_setup.form_name
+INNER JOIN config.custom_fields ON custom_fields.custom_field_setup_id = custom_field_setup.custom_field_setup_id
+WHERE NOT config.custom_field_setup.deleted;
+
+
 -->-->-- src/Frapid.Web/Areas/Frapid.Config/db/PostgreSQL/1.x/1.0/src/05.views/config.filter_name_view.sql --<--<--
 DROP VIEW IF EXISTS config.filter_name_view;
 
@@ -291,27 +305,6 @@ SELECT
     is_default
 FROM config.filters
 WHERE NOT config.filters.deleted;
-
--->-->-- src/Frapid.Web/Areas/Frapid.Config/db/PostgreSQL/1.x/1.0/src/05.views/config.flag_view.sql --<--<--
-DROP VIEW IF EXISTS config.flag_view;
-
-CREATE VIEW config.flag_view
-AS
-SELECT
-    config.flags.flag_id,
-    config.flags.user_id,
-    config.flags.flag_type_id,
-    config.flags.resource_id,
-    config.flags.resource,
-    config.flags.resource_key,
-    config.flags.flagged_on,
-    config.flag_types.flag_type_name,
-    config.flag_types.background_color,
-    config.flag_types.foreground_color
-FROM config.flags
-INNER JOIN config.flag_types
-ON config.flags.flag_type_id = config.flag_types.flag_type_id
-WHERE NOT config.flags.deleted;
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Config/db/PostgreSQL/1.x/1.0/src/06.functions-and-logic/config.create_custom_field.sql --<--<--
 DROP FUNCTION IF EXISTS config.create_custom_field
@@ -417,51 +410,6 @@ END
 $$
 LANGUAGE plpgsql;
 
--->-->-- src/Frapid.Web/Areas/Frapid.Config/db/PostgreSQL/1.x/1.0/src/06.functions-and-logic/config.create_flag.sql --<--<--
-DROP FUNCTION IF EXISTS config.create_flag
-(
-    user_id_            integer,
-    flag_type_id_       integer,
-    resource_           text,
-    resource_key_       text,
-    resource_id_        text
-);
-
-CREATE FUNCTION config.create_flag
-(
-    user_id_            integer,
-    flag_type_id_       integer,
-    resource_           text,
-    resource_key_       text,
-    resource_id_        text
-)
-RETURNS void
-VOLATILE
-AS
-$$
-BEGIN
-    IF NOT EXISTS(SELECT * FROM config.flags WHERE user_id=user_id_ AND resource=resource_ AND resource_key=resource_key_ AND resource_id=resource_id_) THEN
-        INSERT INTO config.flags(user_id, flag_type_id, resource, resource_key, resource_id)
-        SELECT user_id_, flag_type_id_, resource_, resource_key_, resource_id_;
-    ELSE
-        UPDATE config.flags
-        SET
-            flag_type_id=flag_type_id_
-        WHERE 
-            user_id=user_id_ 
-        AND 
-            resource=resource_ 
-        AND 
-            resource_key=resource_key_ 
-        AND 
-            resource_id=resource_id_;
-    END IF;
-END
-$$
-LANGUAGE plpgsql;
-
-
-
 -->-->-- src/Frapid.Web/Areas/Frapid.Config/db/PostgreSQL/1.x/1.0/src/06.functions-and-logic/config.get_custom_field_form_name.sql --<--<--
 DROP FUNCTION IF EXISTS config.get_custom_field_form_name
 (
@@ -472,7 +420,7 @@ CREATE FUNCTION config.get_custom_field_form_name
 (
     _table_name character varying
 )
-RETURNS character varying
+RETURNS national character varying(500)
 STABLE
 AS
 $$
@@ -508,39 +456,6 @@ BEGIN
     WHERE config.custom_field_setup.form_name = config.get_custom_field_form_name(_schema_name, _table_name)
     AND config.custom_field_setup.field_name = _field_name
 	AND NOT config.custom_field_setup.deleted;
-END
-$$
-LANGUAGE plpgsql;
-
-
--->-->-- src/Frapid.Web/Areas/Frapid.Config/db/PostgreSQL/1.x/1.0/src/06.functions-and-logic/config.get_flag_type_id.sql --<--<--
-DROP FUNCTION IF EXISTS config.get_flag_type_id
-(
-    user_id_        integer,
-    resource_       text,
-    resource_key_   text,
-    resource_id_    text
-);
-
-CREATE FUNCTION config.get_flag_type_id
-(
-    user_id_        integer,
-    resource_       text,
-    resource_key_   text,
-    resource_id_    text
-)
-RETURNS integer
-STABLE
-AS
-$$
-BEGIN
-    RETURN flag_type_id
-    FROM config.flags
-    WHERE config.flags.user_id=$1
-    AND config.flags.resource=$2
-    AND config.flags.resource_key=$3
-    AND config.flags.resource_id=$4
-	AND NOT config.flags.deleted;
 END
 $$
 LANGUAGE plpgsql;
@@ -585,11 +500,10 @@ LANGUAGE plpgsql;
 
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Config/db/PostgreSQL/1.x/1.0/src/09.menus/0.menu.sql --<--<--
-SELECT * FROM core.create_app('Frapid.Config', 'Config', '1.0', 'MixERP Inc.', 'December 1, 2015', 'orange configure', '/dashboard/config/offices', null);
-SELECT * FROM core.create_menu('Frapid.Config', 'Offices', '/dashboard/config/offices', 'building outline', '');
-SELECT * FROM core.create_menu('Frapid.Config', 'Flags', '/dashboard/config/flags', 'flag', '');
-SELECT * FROM core.create_menu('Frapid.Config', 'SMTP', '/dashboard/config/smtp', 'at', '');
-SELECT * FROM core.create_menu('Frapid.Config', 'File Manager', '/dashboard/config/file-manager', 'file text outline', '');
+SELECT * FROM core.create_app('Frapid.Config', 'Config', 'Config', '1.0', 'MixERP Inc.', 'December 1, 2015', 'orange configure', '/dashboard/config/offices', null);
+SELECT * FROM core.create_menu('Frapid.Config', 'Offices', 'Offices', '/dashboard/config/offices', 'building outline', '');
+SELECT * FROM core.create_menu('Frapid.Config', 'SMTP', 'SMTP', '/dashboard/config/smtp', 'at', '');
+SELECT * FROM core.create_menu('Frapid.Config', 'FileManager', 'File Manager', '/dashboard/config/file-manager', 'file text outline', '');
 
 SELECT * FROM auth.create_app_menu_policy
 (
@@ -605,7 +519,7 @@ SELECT * FROM auth.create_app_menu_policy
     'User', 
     core.get_office_id_by_office_name('Default'), 
     'Frapid.Config',
-    '{Offices, Flags}'::text[]
+    '{Offices}'::text[]
 );
 
 SELECT * FROM auth.create_app_menu_policy
@@ -619,13 +533,10 @@ SELECT * FROM auth.create_app_menu_policy
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Config/db/PostgreSQL/1.x/1.0/src/10.policy/access_policy.sql --<--<--
 SELECT * FROM auth.create_api_access_policy('{*}', 1, 'config.kanban_details', '{*}', true);
-SELECT * FROM auth.create_api_access_policy('{*}', 1, 'config.flag_types', '{*}', true);
-SELECT * FROM auth.create_api_access_policy('{*}', 1, 'config.flag_view', '{*}', true);
 SELECT * FROM auth.create_api_access_policy('{*}', 1, 'config.kanbans', '{*}', true);
 SELECT * FROM auth.create_api_access_policy('{*}', 1, 'config.filter_name_view', '{*}', true);
 
 SELECT * FROM auth.create_api_access_policy('{User}', core.get_office_id_by_office_name('Default'), 'core.offices', '{*}', true);
-SELECT * FROM auth.create_api_access_policy('{User}', core.get_office_id_by_office_name('Default'), 'config.flags', '{*}', true);
 SELECT * FROM auth.create_api_access_policy('{Admin}', core.get_office_id_by_office_name('Default'), '', '{*}', true);
 
 
@@ -771,6 +682,25 @@ BEGIN
     AND tableowner <> 'report_user'
     LOOP
         EXECUTE 'GRANT SELECT ON TABLE '|| this.schemaname || '.' || this.tablename ||' TO report_user;';
+    END LOOP;
+END
+$$
+LANGUAGE plpgsql;
+
+DO
+$$
+    DECLARE this record;
+BEGIN
+    IF(CURRENT_USER = 'report_user') THEN
+        RETURN;
+    END IF;
+
+    FOR this IN 
+    SELECT oid::regclass::text as mat_view
+    FROM   pg_class
+    WHERE  relkind = 'm'
+    LOOP
+        EXECUTE 'GRANT SELECT ON TABLE '|| this.mat_view  ||' TO report_user;';
     END LOOP;
 END
 $$

@@ -1,62 +1,45 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Reflection;
 using Frapid.Configuration.Db;
 using Frapid.DataAccess.Models;
 using Frapid.Framework.Extensions;
 using Frapid.i18n;
-using Frapid.NPoco;
+using Frapid.Mapper;
+using Frapid.Mapper.Extensions;
+using Frapid.Mapper.Helpers;
 
 namespace Frapid.DataAccess
 {
     public class FilterManager
     {
-        public static string GetColumnName<T>(T poco, string propertyName)
-        {
-            var type = poco.GetType();
-
-            var a = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(p => p.Name.Equals(propertyName));
-
-            var attr = a?.GetCustomAttributes(typeof(ColumnAttribute), false).Cast<ColumnAttribute>().FirstOrDefault();
-
-            if(attr != null)
-            {
-                return attr.Name;
-            }
-
-            return string.Empty;
-        }
-
         public static void AddFilters(ref Sql sql, List<Filter> filters)
         {
-            if(filters == null ||
-               filters.Count.Equals(0))
+            if (filters == null ||
+                filters.Count.Equals(0))
             {
                 return;
             }
 
-            foreach(var filter in filters)
+            foreach (var filter in filters)
             {
-                string column = Sanitizer.SanitizeIdentifierName(filter.ColumnName);
+                string column = Sanitizer.SanitizeIdentifierName(filter.ColumnName).ToUnderscoreLowerCase();
 
-                if(string.IsNullOrWhiteSpace(column))
+                if (string.IsNullOrWhiteSpace(column))
                 {
                     continue;
                 }
 
                 string statement = filter.FilterStatement;
 
-                if(statement == null ||
-                   statement.ToUpperInvariant() != "OR")
+                if (statement == null ||
+                    statement.ToUpperInvariant() != "OR")
                 {
                     statement = "AND";
                 }
 
                 statement += " ";
 
-                switch((FilterCondition)filter.FilterCondition)
+                switch ((FilterCondition) filter.FilterCondition)
                 {
                     case FilterCondition.IsEqualTo:
                         sql.Append(statement + Sanitizer.SanitizeIdentifierName(column) + " = @0", GetValue(filter.Type, filter.FilterValue));
@@ -83,10 +66,12 @@ namespace Frapid.DataAccess
                         sql.Append(statement + Sanitizer.SanitizeIdentifierName(column) + " NOT BETWEEN @0 AND @1", GetValue(filter.Type, filter.FilterValue), GetValue(filter.Type, filter.FilterValue));
                         break;
                     case FilterCondition.IsLike:
-                        sql.Append(statement + " LOWER(COALESCE(" + Sanitizer.SanitizeIdentifierName(column) + ", '')) LIKE @0", "%" + filter.FilterValue.Or("").ToLower(CultureManager.GetCurrent()) + "%");
+                        sql.Append(statement + " LOWER(COALESCE(" + Sanitizer.SanitizeIdentifierName(column) + ", '')) LIKE @0",
+                            "%" + filter.FilterValue.Or("").ToLower(CultureManager.GetCurrent()) + "%");
                         break;
                     case FilterCondition.IsNotLike:
-                        sql.Append(statement + " LOWER(COALESCE(" + Sanitizer.SanitizeIdentifierName(column) + ", '') NOT LIKE @0", "%" + filter.FilterValue.Or("").ToLower(CultureManager.GetCurrent()) + "%");
+                        sql.Append(statement + " LOWER(COALESCE(" + Sanitizer.SanitizeIdentifierName(column) + ", '')) NOT LIKE @0",
+                            "%" + filter.FilterValue.Or("").ToLower(CultureManager.GetCurrent()) + "%");
                         break;
                 }
             }
@@ -94,68 +79,46 @@ namespace Frapid.DataAccess
 
         private static object GetValue(Type type, string value)
         {
-            if(string.IsNullOrWhiteSpace(value))
-            {
-                return null;
-            }
-
-            string typeName = type == null ? "System.String" : type.FullName;
-
-            if (typeName == "System.Boolean")
-            {
-                return new[]
-                       {
-                           "TRUE",
-                           "YES",
-                           "T"
-                       }.Contains(value.ToUpperInvariant());
-            }
-
-            if(typeName == "System.String")
-            {
-                return value;
-            }
-
-            var converter = TypeDescriptor.GetConverter(type);
-            return converter.ConvertFromString(value);
+            var converted = TypeConverter.Convert(value, type);
+            return converted;
         }
 
         public static void AddFilters<T>(ref Sql sql, T poco, List<Filter> filters)
         {
-            if(filters == null ||
-               filters.Count.Equals(0))
+            if (filters == null ||
+                filters.Count.Equals(0))
             {
                 return;
             }
 
-            foreach(var filter in filters)
+            foreach (var filter in filters)
             {
-                if(string.IsNullOrWhiteSpace(filter.ColumnName))
+                if (string.IsNullOrWhiteSpace(filter.ColumnName))
                 {
-                    if(!string.IsNullOrWhiteSpace(filter.PropertyName))
+                    if (!string.IsNullOrWhiteSpace(filter.PropertyName))
                     {
-                        filter.ColumnName = GetColumnName(poco, filter.PropertyName);
+                        filter.ColumnName = filter.PropertyName.ToUnderscoreCase();
                     }
                 }
 
                 string column = Sanitizer.SanitizeIdentifierName(filter.ColumnName);
 
-                if(string.IsNullOrWhiteSpace(column))
+                if (string.IsNullOrWhiteSpace(column))
                 {
                     continue;
                 }
 
                 string statement = filter.FilterStatement;
 
-                if(statement == null ||
-                   statement.ToUpperInvariant() != "OR")
+                if (statement == null ||
+                    statement.ToUpperInvariant() != "OR")
                 {
                     statement = "AND";
                 }
 
                 statement += " ";
 
-                switch((FilterCondition)filter.FilterCondition)
+                switch ((FilterCondition) filter.FilterCondition)
                 {
                     case FilterCondition.IsEqualTo:
                         sql.Append(statement + Sanitizer.SanitizeIdentifierName(column) + " = @0", filter.FilterValue);

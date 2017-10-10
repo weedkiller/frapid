@@ -10,6 +10,7 @@
 	"RealeasedOn": null,
 	"Description": "Frapid authentication module.",
 	"Category": "Core Modules",
+	"Hasi18N": true,
 	"Bundle": "Frapid Framework",
     "IsMeta": false,
 	"DbSchema": "account",
@@ -18,7 +19,7 @@
 	"PatchFilePath": null,
 	"InstallSample": true,
 	"My": "~/Areas/Frapid.Account/.my/db.sql",
-    "OverrideTemplatePath":"~/Areas/Frapid.Account/Override",
+    "OverrideTemplatePath":"~/Areas/Frapid.Account/Overrides",
     "OverrideDestination":"~/Tenants/{0}/Areas",
 	"DependsOn": ["Frapid", "Frapid.Core"]
 }

@@ -1,13 +1,13 @@
 ﻿@model dynamic
 
 @{
-    ViewBag.Title = "Configuration Profiles";
+    ViewBag.Title = I18N.ConfigurationProfiles;
     Layout = ViewBag.Layout;
 }
 <script>
     var scrudFactory = new Object();
 
-    scrudFactory.title = "Configuration Profiles";
+    scrudFactory.title = window.translate("ConfigurationProfiles");
 
     scrudFactory.viewAPI = "/api/views/account/configuration-profile-scrud-view";
     scrudFactory.viewTableName = "account.configuration_profile_scrud_view";
@@ -15,7 +15,8 @@
     scrudFactory.formAPI = "/api/forms/account/configuration-profiles";
     scrudFactory.formTableName = "account.configuration_profiles";
 
-    scrudFactory.excludedColumns = ["audit_user_id", "audit_ts"];
+    scrudFactory.excludedColumns = ["AuditUserId", "AuditTs", "Deleted"];
+
 
     scrudFactory.allowDelete = true;
     scrudFactory.allowEdit = true;
@@ -23,9 +24,9 @@
     scrudFactory.live = "ProfileName";
 
     scrudFactory.card = {
-        header: "profile_name",
-        meta: "defult_role",
-        description: "default_office"
+        header: "ProfileName",
+        meta: "DefultRole",
+        description: "DefaultOffice"
     };
 
     scrudFactory.keys = [
@@ -52,6 +53,14 @@
             $.cachedScript("/assets/js/scrudfactory-view.js");
             $.cachedScript("/assets/js/scrudfactory-form.js");
         });
+    });
+
+    $(document).on("viewready", function() {
+        const rows = $("#ScrudView tbody tr").length;
+
+        if (rows) {
+            $("#AddNewButton").remove();
+        };
     });
 </script>
 

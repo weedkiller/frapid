@@ -10,6 +10,7 @@ using Frapid.Configuration.Db;
 using Frapid.DataAccess;
 using Frapid.DataAccess.Subtext;
 using Frapid.Installer.Helpers;
+using Frapid.Mapper.Query.Select;
 using Serilog;
 
 namespace Frapid.Installer.DAL
@@ -36,13 +37,7 @@ namespace Frapid.Installer.DAL
 
             using(var db = DbProvider.Get(connectionString, tenant).GetDatabase())
             {
-                int awaiter = await db.ExecuteScalarAsync<int>
-                    (
-                        sql,
-                        new object[]
-                        {
-                            tenant
-                        }).ConfigureAwait(false);
+                int awaiter = await db.ScalarAsync<int>(sql, tenant).ConfigureAwait(false);
                 return awaiter.Equals(1);
             }
         }
@@ -53,7 +48,7 @@ namespace Frapid.Installer.DAL
 
             using(var db = DbProvider.Get(FrapidDbServer.GetSuperUserConnectionString(tenant, database), tenant).GetDatabase())
             {
-                int awaiter = await db.ExecuteScalarAsync<int>
+                int awaiter = await db.ScalarAsync<int>
                     (
                         sql,
                         new object[]
@@ -67,8 +62,7 @@ namespace Frapid.Installer.DAL
         public async Task RunSqlAsync(string tenant, string database, string fromFile)
         {
             fromFile = fromFile.Replace("{DbServer}", "SQL Server");
-            if(string.IsNullOrWhiteSpace(fromFile) ||
-               File.Exists(fromFile).Equals(false))
+            if(string.IsNullOrWhiteSpace(fromFile) || File.Exists(fromFile).Equals(false))
             {
                 return;
             }
@@ -89,7 +83,8 @@ namespace Frapid.Installer.DAL
 
         public async Task CleanupDbAsync(string tenant, string database)
         {
-            string sql = @"DECLARE @sql nvarchar(MAX);
+            string sql = @"SET NOCOUNT ON;
+                            DECLARE @sql nvarchar(MAX);
                             DECLARE @queries TABLE(id int identity, query nvarchar(500), done bit DEFAULT(0));
                             DECLARE @id int;
                             DECLARE @query nvarchar(500);
@@ -125,7 +120,14 @@ namespace Frapid.Installer.DAL
                 using(var command = new SqlCommand(sql, connection))
                 {
                     connection.Open();
-                    await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+                    var message = await command.ExecuteScalarAsync().ConfigureAwait(false);
+
+                    if (message != null)
+                    {
+                        InstallerLog.Information($"Could not completely clean database \"{tenant}\" due to dependency issues. Trying again.");
+                        await CleanupDbAsync(tenant, database).ConfigureAwait(false);
+                    }
                 }
             }
         }

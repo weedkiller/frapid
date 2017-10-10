@@ -7,23 +7,25 @@ GO
 CREATE PROCEDURE auth.get_group_menu_policy
 (
     @role_id        integer,
-    @office_id      integer,
-    @culture        national character varying(500)
+    @office_id      integer
 )
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
 	DECLARE @result TABLE
 	(
 		row_number                      integer,
 		menu_id                         integer,
 		app_name                        national character varying(500),
+		app_i18n_key					national character varying(500),
 		menu_name                       national character varying(500),
+		i18n_key						national character varying(500),
 		allowed                         bit,
 		url                             national character varying(500),
 		sort                            integer,
-		icon                            character varying,
+		icon                            national character varying(100),
 		parent_menu_id                  integer
 	);
 
@@ -46,6 +48,7 @@ BEGIN
     SET
         app_name        = core.menus.app_name,
         menu_name       = core.menus.menu_name,
+		i18n_key		= core.menus.i18n_key,
         url             = core.menus.url,
         sort            = core.menus.sort,
         icon            = core.menus.icon,
@@ -56,16 +59,15 @@ BEGIN
 
     UPDATE @result
     SET
-        menu_name       = core.menu_locale.menu_text
+        app_i18n_key    = core.apps.i18n_key
     FROM @result AS result
-    INNER JOIN core.menu_locale    
-    ON core.menu_locale.menu_id = result.menu_id
-    WHERE core.menu_locale.culture = @culture;
-    
+    INNER JOIN core.apps
+    ON core.apps.app_name = result.app_name;
 
     SELECT * FROM @result
     ORDER BY app_name, sort, menu_id;
 END;
 
---EXECUTE auth.get_group_menu_policy 1, 1, '';
 GO
+
+--EXECUTE auth.get_group_menu_policy 1, 1, '';

@@ -4,9 +4,9 @@ using System.Web.Http.Dispatcher;
 using Frapid.WebApi;
 using Serilog;
 
-namespace Frapid.Web
+namespace Frapid.Web.Application
 {
-    public class DefaultAssemblyResolver: DefaultAssembliesResolver
+    public class DefaultAssemblyResolver : DefaultAssembliesResolver
     {
         public override ICollection<Assembly> GetAssemblies()
         {
@@ -17,14 +17,14 @@ namespace Frapid.Web
             {
                 var items = FrapidApiController.GetMembers();
 
-                foreach(var item in items)
+                foreach (var item in items)
                 {
                     baseAssemblies.Add(item);
                 }
             }
-            catch(ReflectionTypeLoadException ex)
+            catch (ReflectionTypeLoadException ex)
             {
-                foreach(var exception in ex.LoaderExceptions)
+                foreach (var exception in ex.LoaderExceptions)
                 {
                     Log.Error("Could not load assemblies containing Frapid Web API. Exception: {Exception}", exception);
                 }

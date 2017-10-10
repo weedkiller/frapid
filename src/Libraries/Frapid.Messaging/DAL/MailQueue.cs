@@ -3,8 +3,10 @@ using System.Threading.Tasks;
 using Frapid.Configuration;
 using Frapid.Configuration.Db;
 using Frapid.DataAccess;
+using Frapid.Mapper;
+using Frapid.Mapper.Query.NonQuery;
+using Frapid.Mapper.Query.Select;
 using Frapid.Messaging.DTO;
-using Frapid.NPoco;
 
 namespace Frapid.Messaging.DAL
 {
@@ -17,15 +19,16 @@ namespace Frapid.Messaging.DAL
 
         public static async Task<IEnumerable<EmailQueue>> GetMailInQueueAsync(string database)
         {
-            using(var db = DbProvider.GetDatabase(database))
+            using (var db = DbProvider.GetDatabase(database))
             {
                 var sql = new Sql("SELECT * FROM config.email_queue");
                 sql.Where("is_test=@0", false);
+                sql.And("deleted=@0",false);
                 sql.Append("AND delivered=@0", false);
                 sql.Append("AND canceled=@0", false);
                 sql.Append("AND send_on<=" + FrapidDbServer.GetDbTimestampFunction(database));
 
-                return await db.FetchAsync<EmailQueue>(sql).ConfigureAwait(false);
+                return await db.SelectAsync<EmailQueue>(sql).ConfigureAwait(false);
             }
         }
 
@@ -37,9 +40,9 @@ namespace Frapid.Messaging.DAL
             sql.Append("delivered_on=" + FrapidDbServer.GetDbTimestampFunction(database));
             sql.Where("queue_id=@0", queueId);
 
-            using(var db = DbProvider.GetDatabase(database))
+            using (var db = DbProvider.GetDatabase(database))
             {
-                await db.ExecuteAsync(sql).ConfigureAwait(false);
+                await db.NonQueryAsync(sql).ConfigureAwait(false);
             }
         }
     }

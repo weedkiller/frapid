@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Frapid.Configuration;
 using Frapid.Configuration.Db;
 using Frapid.DataAccess;
+using Frapid.Mapper.Query.Select;
 
 namespace Frapid.Installer.DAL
 {
@@ -30,13 +31,7 @@ namespace Frapid.Installer.DAL
 
             using (var db = DbProvider.Get(connectionString, tenant).GetDatabase())
             {
-                int awaiter = await db.ExecuteScalarAsync<int>
-                    (
-                        sql,
-                        new object[]
-                        {
-                            tenant
-                        }).ConfigureAwait(false);
+                int awaiter = await db.ScalarAsync<int>(sql, tenant).ConfigureAwait(false);
                 return awaiter.Equals(1);
             }
         }
@@ -45,11 +40,9 @@ namespace Frapid.Installer.DAL
         {
             const string sql = "SELECT COUNT(*) FROM pg_catalog.pg_namespace WHERE nspname=@0;";
 
-            using (
-                var db =
-                    DbProvider.Get(FrapidDbServer.GetSuperUserConnectionString(tenant, database), tenant).GetDatabase())
+            using (var db = DbProvider.Get(FrapidDbServer.GetSuperUserConnectionString(tenant, database), tenant).GetDatabase())
             {
-                int awaiter = await db.ExecuteScalarAsync<int>
+                int awaiter = await db.ScalarAsync<int>
                     (
                         sql,
                         new object[]
@@ -73,7 +66,7 @@ namespace Frapid.Installer.DAL
 
             //PetaPoco/NPoco Escape
             //ORM: Remove this behavior if you change the ORM.
-            sql = sql.Replace("@", "@@");
+            //sql = sql.Replace("@", "@@");
 
 
             string connectionString = FrapidDbServer.GetSuperUserConnectionString(tenant, database);

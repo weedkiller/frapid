@@ -201,13 +201,14 @@ LANGUAGE plpgsql;
 
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Authorization/db/PostgreSQL/1.x/1.0/src/02.functions-and-logic/auth.get_apps.sql --<--<--
-DROP FUNCTION IF EXISTS auth.get_apps(_user_id integer, _office_id integer, _culture text);
+DROP FUNCTION IF EXISTS auth.get_apps(_user_id integer, _office_id integer);
 
-CREATE FUNCTION auth.get_apps(_user_id integer, _office_id integer, _culture text)
+CREATE FUNCTION auth.get_apps(_user_id integer, _office_id integer)
 RETURNS TABLE
 (
     app_id                              integer,
     app_name                            text,
+	i18n_key							text,
     name                                text,
     version_number                      text,
     publisher                           text,
@@ -222,6 +223,7 @@ BEGIN
     SELECT
         core.apps.app_id,
         core.apps.app_name::text,
+		core.apps.i18n_key::text,
         core.apps.name::text,
         core.apps.version_number::text,
         core.apps.publisher::text,
@@ -232,7 +234,7 @@ BEGIN
     WHERE core.apps.app_name IN
     (
         SELECT DISTINCT menus.app_name
-        FROM auth.get_menu(_user_id, _office_id, _culture)
+        FROM auth.get_menu(_user_id, _office_id)
         AS menus
     )
 	AND NOT core.apps.deleted;
@@ -245,26 +247,25 @@ LANGUAGE plpgsql;
 DROP FUNCTION IF EXISTS auth.get_group_menu_policy
 (
     _role_id        integer,
-    _office_id      integer,
-    _culture        text
+    _office_id      integer
 );
 
 CREATE FUNCTION auth.get_group_menu_policy
 (
     _role_id        integer,
-    _office_id      integer,
-    _culture        text
+    _office_id      integer
 )
 RETURNS TABLE
 (
     row_number                      integer,
     menu_id                         integer,
     app_name                        text,
+    i18n_key                        text,
     menu_name                       text,
     allowed                         boolean,
     url                             text,
     sort                            integer,
-    icon                            character varying,
+    icon                            national character varying(100),
     parent_menu_id                  integer
 )
 AS
@@ -276,11 +277,12 @@ BEGIN
         row_number                      SERIAL,
         menu_id                         integer,
         app_name                        text,
+		i18n_key						text,
         menu_name                       text,
         allowed                         boolean,
         url                             text,
         sort                            integer,
-        icon                            character varying,
+        icon                            national character varying(100),
         parent_menu_id                  integer
     ) ON COMMIT DROP;
 
@@ -301,21 +303,14 @@ BEGIN
     UPDATE _temp_menu
     SET
         app_name        = core.menus.app_name,
+		i18n_key		= core.menus.i18n_key,
         menu_name       = core.menus.menu_name,
         url             = core.menus.url,
         sort            = core.menus.sort,
         icon            = core.menus.icon,
         parent_menu_id  = core.menus.parent_menu_id
     FROM core.menus
-    WHERE core.menus.menu_id = _temp_menu.menu_id;
-
-    UPDATE _temp_menu
-    SET
-        menu_name       = core.menu_locale.menu_text
-    FROM core.menu_locale
-    WHERE core.menu_locale.menu_id = _temp_menu.menu_id
-    AND core.menu_locale.culture = _culture;
-    
+    WHERE core.menus.menu_id = _temp_menu.menu_id;    
 
     RETURN QUERY
     SELECT * FROM _temp_menu
@@ -330,24 +325,24 @@ LANGUAGE plpgsql;
 DROP FUNCTION IF EXISTS auth.get_menu
 (
     _user_id                            integer, 
-    _office_id                          integer, 
-    _culture                            text
+    _office_id                          integer
 );
 
 CREATE FUNCTION auth.get_menu
 (
     _user_id                            integer, 
-    _office_id                          integer, 
-    _culture                            text
+    _office_id                          integer
 )
 RETURNS TABLE
 (
     menu_id                             integer,
-    app_name                            character varying,
-    menu_name                           character varying,
+    app_name                            national character varying(100),
+	app_i18n_key						national character varying(200),
+    menu_name                           national character varying(100),
+	i18n_key							national character varying(200),
     url                                 text,
     sort                                integer,
-    icon                                character varying,
+    icon                                national character varying(100),
     parent_menu_id                      integer
 )
 AS
@@ -366,11 +361,13 @@ BEGIN
     CREATE TEMPORARY TABLE _temp_menu
     (
         menu_id                         integer,
-        app_name                        character varying,
-        menu_name                       character varying,
+        app_name                        national character varying(100),
+		app_i18n_key					national character varying(200),
+        menu_name                       national character varying(100),
+		i18n_key						national character varying(200),
         url                             text,
         sort                            integer,
-        icon                            character varying,
+        icon                            national character varying(100),
         parent_menu_id                  integer
     ) ON COMMIT DROP;
 
@@ -415,6 +412,7 @@ BEGIN
     SET
         app_name        = core.menus.app_name,
         menu_name       = core.menus.menu_name,
+		i18n_key	    = core.menus.i18n_key,
         url             = core.menus.url,
         sort            = core.menus.sort,
         icon            = core.menus.icon,
@@ -424,12 +422,10 @@ BEGIN
 
     UPDATE _temp_menu
     SET
-        menu_name       = core.menu_locale.menu_text
-    FROM core.menu_locale
-    WHERE core.menu_locale.menu_id = _temp_menu.menu_id
-    AND core.menu_locale.culture = _culture;
+        app_i18n_key       = core.apps.i18n_key
+    FROM core.apps
+    WHERE core.apps.app_name = _temp_menu.app_name;
     
-
     RETURN QUERY
     SELECT * FROM _temp_menu;
 END
@@ -442,27 +438,27 @@ LANGUAGE plpgsql;
 DROP FUNCTION IF EXISTS auth.get_user_menu_policy
 (
     _user_id        integer,
-    _office_id      integer,
-    _culture        text
+    _office_id      integer
 );
 
 CREATE FUNCTION auth.get_user_menu_policy
 (
     _user_id        integer,
-    _office_id      integer,
-    _culture        text
+    _office_id      integer
 )
 RETURNS TABLE
 (
     row_number                      integer,
     menu_id                         integer,
     app_name                        text,
+	app_i18n_key					text,
     menu_name                       text,
+	i18n_key						text,
     allowed                         boolean,
     disallowed                      boolean,
     url                             text,
     sort                            integer,
-    icon                            character varying,
+    icon                            national character varying(100),
     parent_menu_id                  integer
 )
 AS
@@ -483,12 +479,14 @@ BEGIN
         row_number                      SERIAL,
         menu_id                         integer,
         app_name                        text,
+		app_i18n_key					text,
         menu_name                       text,
+		i18n_key						text,
         allowed                         boolean,
         disallowed                      boolean,
         url                             text,
         sort                            integer,
-        icon                            character varying,
+        icon                            national character varying(100),
         parent_menu_id                  integer
     ) ON COMMIT DROP;
 
@@ -529,6 +527,7 @@ BEGIN
     SET
         app_name        = core.menus.app_name,
         menu_name       = core.menus.menu_name,
+		i18n_key		= core.menus.i18n_key,
         url             = core.menus.url,
         sort            = core.menus.sort,
         icon            = core.menus.icon,
@@ -536,14 +535,13 @@ BEGIN
     FROM core.menus
     WHERE core.menus.menu_id = _temp_menu.menu_id;
 
+	
     UPDATE _temp_menu
     SET
-        menu_name       = core.menu_locale.menu_text
-    FROM core.menu_locale
-    WHERE core.menu_locale.menu_id = _temp_menu.menu_id
-    AND core.menu_locale.culture = _culture;
+        app_i18n_key       = core.apps.i18n_key
+    FROM core.apps
+    WHERE core.apps.app_name = _temp_menu.app_name;
     
-
     RETURN QUERY
     SELECT * FROM _temp_menu
     ORDER BY app_name, sort, menu_id;
@@ -869,14 +867,14 @@ $$
 LANGUAGE plpgsql;
 
 -->-->-- src/Frapid.Web/Areas/Frapid.Authorization/db/PostgreSQL/1.x/1.0/src/03.menus/0.menus.sql --<--<--
-SELECT * FROM core.create_app('Frapid.Authorization', 'Authorization', '1.0', 'MixERP Inc.', 'December 1, 2015', 'purple privacy', '/dashboard/authorization/menu-access/group-policy', '{Frapid.Account}'::text[]);
+SELECT * FROM core.create_app('Frapid.Authorization', 'Authorization', 'Authorization', '1.0', 'MixERP Inc.', 'December 1, 2015', 'purple privacy', '/dashboard/authorization/menu-access/group-policy', '{Frapid.Account}'::text[]);
 
-SELECT * FROM core.create_menu('Frapid.Authorization', 'Entity Access Policy', '', 'lock', '');
-SELECT * FROM core.create_menu('Frapid.Authorization', 'Group Entity Access Policy', '/dashboard/authorization/entity-access/group-policy', 'users', 'Entity Access Policy');
-SELECT * FROM core.create_menu('Frapid.Authorization', 'User Entity Access Policy', '/dashboard/authorization/entity-access/user-policy', 'user', 'Entity Access Policy');
-SELECT * FROM core.create_menu('Frapid.Authorization', 'Menu Access Policy', '', 'toggle on', '');
-SELECT * FROM core.create_menu('Frapid.Authorization', 'Group Policy', '/dashboard/authorization/menu-access/group-policy', 'users', 'Menu Access Policy');
-SELECT * FROM core.create_menu('Frapid.Authorization', 'User Policy', '/dashboard/authorization/menu-access/user-policy', 'user', 'Menu Access Policy');
+SELECT * FROM core.create_menu('Frapid.Authorization', 'EntityAccessPolicy', 'Entity Access Policy', '', 'lock', '');
+SELECT * FROM core.create_menu('Frapid.Authorization', 'GroupEntityAccessPolicy', 'Group Entity Access Policy', '/dashboard/authorization/entity-access/group-policy', 'users', 'Entity Access Policy');
+SELECT * FROM core.create_menu('Frapid.Authorization', 'UserEntityAccessPolicy', 'User Entity Access Policy', '/dashboard/authorization/entity-access/user-policy', 'user', 'Entity Access Policy');
+SELECT * FROM core.create_menu('Frapid.Authorization', 'MenuAccessPolicy', 'Menu Access Policy', '', 'toggle on', '');
+SELECT * FROM core.create_menu('Frapid.Authorization', 'GroupPolicy', 'Group Policy', '/dashboard/authorization/menu-access/group-policy', 'users', 'Menu Access Policy');
+SELECT * FROM core.create_menu('Frapid.Authorization', 'UserPolicy', 'User Policy', '/dashboard/authorization/menu-access/user-policy', 'user', 'Menu Access Policy');
 
 
 SELECT * FROM auth.create_app_menu_policy
@@ -1097,6 +1095,25 @@ BEGIN
     AND tableowner <> 'report_user'
     LOOP
         EXECUTE 'GRANT SELECT ON TABLE '|| this.schemaname || '.' || this.tablename ||' TO report_user;';
+    END LOOP;
+END
+$$
+LANGUAGE plpgsql;
+
+DO
+$$
+    DECLARE this record;
+BEGIN
+    IF(CURRENT_USER = 'report_user') THEN
+        RETURN;
+    END IF;
+
+    FOR this IN 
+    SELECT oid::regclass::text as mat_view
+    FROM   pg_class
+    WHERE  relkind = 'm'
+    LOOP
+        EXECUTE 'GRANT SELECT ON TABLE '|| this.mat_view  ||' TO report_user;';
     END LOOP;
 END
 $$

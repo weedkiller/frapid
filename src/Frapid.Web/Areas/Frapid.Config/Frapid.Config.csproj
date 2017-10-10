@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.0\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.0\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
-  <Import Project="packages\Microsoft.Net.Compilers.1.1.1\build\Microsoft.Net.Compilers.props" Condition="Exists('packages\Microsoft.Net.Compilers.1.1.1\build\Microsoft.Net.Compilers.props')" />
+  <Import Project="packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
+  <Import Project="packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props" Condition="Exists('packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -53,22 +53,58 @@
     <Reference Include="Frapid.Dashboard">
       <HintPath>..\..\bin\Frapid.Dashboard.dll</HintPath>
     </Reference>
+    <Reference Include="Frapid.DataAccess, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\bin\Frapid.DataAccess.dll</HintPath>
+    </Reference>
+    <Reference Include="Frapid.DbPolicy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\bin\Frapid.DbPolicy.dll</HintPath>
+    </Reference>
     <Reference Include="Frapid.Framework, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.Framework.dll</HintPath>
     </Reference>
+    <Reference Include="Frapid.i18n, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\bin\Frapid.i18n.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Serilog, Version=1.5.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
-      <HintPath>packages\Serilog.1.5.14\lib\net45\Serilog.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Serilog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
+      <HintPath>packages\Serilog.2.3.0\lib\net46\Serilog.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Helpers, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.Helpers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.Razor.3.2.3\lib\net45\System.Web.Razor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.WebPages, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Deployment, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.Deployment.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web.Mvc">
@@ -77,15 +113,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AreaRegistration.cs" />
-    <Compile Include="Controllers\ApiAccessController.cs" />
-    <Compile Include="Controllers\CurrencyController.cs" />
     <Compile Include="Controllers\FileManagerController.cs" />
-    <Compile Include="Controllers\FlagController.cs" />
-    <Compile Include="Controllers\MenuAccessController.cs" />
     <Compile Include="Controllers\OfficeController.cs" />
     <Compile Include="Controllers\Services\AttachmentController.cs" />
     <Compile Include="Controllers\SmtpController.cs" />
     <Compile Include="FrapidConfig.cs" />
+    <Compile Include="I18N.cs" />
     <Compile Include="Models\FileManagerResource.cs" />
     <Compile Include="Models\ResourceCreateException.cs" />
     <Compile Include="Models\ResourceCreator.cs" />
@@ -94,24 +127,33 @@
     <Compile Include="Models\ResourceUploader.cs" />
     <Compile Include="Models\ResourceUploadException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Views\FileManager\Shared\FileModal.generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>FileModal.cshtml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FileManager\Shared\FolderModal.generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>FolderModal.cshtml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FileManager\Shared\UploadModal.generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>UploadModal.cshtml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Content\FileManager\Index.css" />
-    <Content Include="Scripts\FileManager\Index.js" />
+    <Content Include="styles\file-manager\index.css" />
+    <Content Include="scripts\file-manager\Index.js" />
     <Content Include="Views\web.config" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ViewModels\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\Currency\Index.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="Views\Office\Index.cshtml" />
-    <Content Include="Views\Flag\Index.cshtml" />
     <Content Include="Views\Smtp\Index.cshtml" />
-    <Content Include="Views\ApiAccess\Index.cshtml" />
-    <Content Include="Views\MenuAccess\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="web.config" />
@@ -119,9 +161,18 @@
     <Content Include="packages.config" />
     <None Include="Properties\PublishProfiles\frapid-publish-profile.pubxml" />
     <Content Include="Views\FileManager\Index.cshtml" />
-    <Content Include="Views\FileManager\Shared\FileModal.cshtml" />
-    <Content Include="Views\FileManager\Shared\FolderModal.cshtml" />
-    <Content Include="Views\FileManager\Shared\UploadModal.cshtml" />
+    <Content Include="Views\FileManager\Shared\FileModal.cshtml">
+      <Generator>RazorGenerator</Generator>
+      <LastGenOutput>FileModal.generated.cs</LastGenOutput>
+    </Content>
+    <Content Include="Views\FileManager\Shared\FolderModal.cshtml">
+      <Generator>RazorGenerator</Generator>
+      <LastGenOutput>FolderModal.generated.cs</LastGenOutput>
+    </Content>
+    <Content Include="Views\FileManager\Shared\UploadModal.cshtml">
+      <Generator>RazorGenerator</Generator>
+      <LastGenOutput>UploadModal.generated.cs</LastGenOutput>
+    </Content>
     <None Include="web.Debug.config">
       <DependentUpon>web.config</DependentUpon>
     </None>
@@ -158,8 +209,8 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\Microsoft.Net.Compilers.1.1.1\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Net.Compilers.1.1.1\build\Microsoft.Net.Compilers.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.0\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.0\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

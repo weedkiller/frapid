@@ -1,13 +1,13 @@
 ﻿@model dynamic
 
 @{
-    ViewBag.Title = "User Management";
+    ViewBag.Title = I18N.UserManagement;
     Layout = ViewBag.Layout;
 }
 <script>
     var scrudFactory = new Object();
 
-    scrudFactory.title = "User Management";
+    scrudFactory.title = window.translate("UserManagement");
 
     scrudFactory.viewAPI = "/api/views/account/user-scrud-view";
     scrudFactory.viewTableName = "account.user_scrud_view";
@@ -15,7 +15,7 @@
     scrudFactory.formAPI = "/api/forms/account/users";
     scrudFactory.formTableName = "account.users";
 
-    scrudFactory.excludedColumns = ["audit_user_id", "audit_ts", "password"];
+    scrudFactory.excludedColumns = ["AuditUserId", "AuditTs", "Password"];
     scrudFactory.hiddenColumns = ["Password"];
 
     scrudFactory.allowDelete = true;
@@ -36,7 +36,7 @@
     ];
 
     scrudFactory.card = {
-        header: "name"
+        header: "Name"
     };
 
     scrudFactory.keys = [

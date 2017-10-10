@@ -3,19 +3,22 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Mvc;
 using Frapid.Account.DAL;
+using Frapid.Account.Models.Backend;
 using Frapid.Account.ViewModels;
 using Frapid.ApplicationState.Cache;
-using Frapid.Areas.Authorization;
 using Frapid.Dashboard;
 using Frapid.Dashboard.Controllers;
+using Frapid.Areas.CSRF;
+using Frapid.DataAccess.Models;
 
 namespace Frapid.Account.Controllers.Backend
 {
+    [AntiForgery]
     public class ChangePasswordController : DashboardController
     {
         [Route("dashboard/account/user/change-password")]
-        [RestrictAnonymous]
         [MenuPolicy]
+        [AccessPolicy("account", "users", AccessTypeEnum.Read)]
         public ActionResult ChangePassword()
         {
             if (!AppUsers.GetCurrent().IsAdministrator)
@@ -27,13 +30,13 @@ namespace Frapid.Account.Controllers.Backend
         }
 
         [Route("dashboard/account/user/change-password")]
-        [RestrictAnonymous]
         [HttpPost]
+        [AccessPolicy("account", "users", AccessTypeEnum.Edit)]
         public async Task<ActionResult> ChangePasswordAsync(ChangePasswordInfo model)
         {
-            var user = await AppUsers.GetCurrentAsync(this.Tenant).ConfigureAwait(true);
+            var meta = await AppUsers.GetCurrentAsync(this.Tenant).ConfigureAwait(true);
 
-            if (!user.IsAdministrator)
+            if (!meta.IsAdministrator)
             {
                 return this.AccessDenied();
             }
@@ -46,12 +49,13 @@ namespace Frapid.Account.Controllers.Backend
 
             if (model.Password != model.ConfirmPassword)
             {
-                return this.Failed("Confirm password does not match with the supplied password", HttpStatusCode.BadRequest);
+                return this.Failed(I18N.ConfirmPasswordDoesNotMatch, HttpStatusCode.BadRequest);
             }
+
 
             try
             {
-                await Users.ChangePasswordAsync(this.Tenant, user.UserId, model).ConfigureAwait(true);
+                await ChangePasswordModel.ChangePasswordAsync(this.Tenant, model).ConfigureAwait(true);
                 return this.Ok("OK");
             }
             catch (Exception ex)

@@ -14,13 +14,13 @@ namespace Frapid.WebsiteBuilder.Controllers
         {
             string theme = this.GetTheme();
 
-            ViewBag.LayoutPath = GetLayoutPath(this.Tenant);
-            ViewBag.Layout = this.GetLayout(theme);
-            ViewBag.HomepageLayout = this.GetHomepageLayout(theme);
+            this.ViewBag.LayoutPath = GetLayoutPath(this.Tenant);
+            this.ViewBag.Layout = this.GetLayout(theme);
+            this.ViewBag.HomepageLayout = this.GetHomepageLayout(theme);
 
-            Log.Verbose($"The layout path for \"{this.CurrentPageUrl}\" is \"{ViewBag.LayoutPath}\".");
-            Log.Verbose($"The layout for \"{this.CurrentPageUrl}\" is \"{ViewBag.Layout}\".");
-            Log.Verbose($"The homepage layout for \"{this.CurrentPageUrl}\" is \"{ViewBag.HomepageLayout}\".");
+            Log.Verbose($"The layout path for \"{this.CurrentPageUrl}\" is \"{this.ViewBag.LayoutPath}\".");
+            Log.Verbose($"The layout for \"{this.CurrentPageUrl}\" is \"{this.ViewBag.Layout}\".");
+            Log.Verbose($"The homepage layout for \"{this.CurrentPageUrl}\" is \"{this.ViewBag.HomepageLayout}\".");
         }
 
         protected override void OnActionExecuting(ActionExecutingContext context)
@@ -35,7 +35,7 @@ namespace Frapid.WebsiteBuilder.Controllers
             if (isStatic)
             {
                 //Static domains are strictly used for content caching only.
-                context.Result = new HttpNotFoundResult("The requested page does not exist.");
+                context.Result = new HttpNotFoundResult(Resources.TheRequestedPageDoesNotExist);
             }
         }
 
@@ -62,7 +62,7 @@ namespace Frapid.WebsiteBuilder.Controllers
         {
             if (string.IsNullOrWhiteSpace(theme))
             {
-                theme = GetTheme();
+                theme = this.GetTheme();
             }
 
             return ThemeConfiguration.GetLayout(this.Tenant, theme);
@@ -72,7 +72,7 @@ namespace Frapid.WebsiteBuilder.Controllers
         {
             if (string.IsNullOrWhiteSpace(theme))
             {
-                theme = GetTheme();
+                theme = this.GetTheme();
             }
 
             return ThemeConfiguration.GetHomepageLayout(this.Tenant, theme);
@@ -97,9 +97,7 @@ namespace Frapid.WebsiteBuilder.Controllers
 
             Log.Verbose($"Resolved tenant \"{tenant}\" and theme \"{theme}\".");
 
-            string overridePath = "~/Tenants/{0}/Areas/Frapid.WebsiteBuilder/Themes/{1}/Areas/{2}/Views/" + path;
-            overridePath = string.Format(CultureInfo.InvariantCulture, overridePath, tenant, theme, areaName);
-
+            string overridePath = $"~/Tenants/{tenant}/Areas/Frapid.WebsiteBuilder/Themes/{theme}/Areas/{areaName}/Views/" + path;
             Log.Verbose($"Checking if there is an overridden view present on the theme path \"{overridePath}\".");
 
             if (System.IO.File.Exists(HostingEnvironment.MapPath(overridePath)))
@@ -108,8 +106,7 @@ namespace Frapid.WebsiteBuilder.Controllers
                 return overridePath;
             }
 
-            overridePath = "~/Tenants/{0}/Areas/{1}/Themes/{2}/Views/" + path;
-            overridePath = string.Format(CultureInfo.InvariantCulture, overridePath, tenant, areaName, theme);
+            overridePath = $"~/Tenants/{tenant}/Areas/{areaName}/Views/" + path;
 
             Log.Verbose($"Checking if there is an overridden view present on the tenant path \"{overridePath}\".");
 
@@ -119,9 +116,7 @@ namespace Frapid.WebsiteBuilder.Controllers
                 return overridePath;
             }
 
-            string defaultPath = "~/Areas/{0}/Views/{1}";
-            defaultPath = string.Format(CultureInfo.InvariantCulture, defaultPath, areaName, path);
-
+            string defaultPath = $"~/Areas/{areaName}/Views/{path}";
             Log.Verbose($"The view \"{path}\" was located on area \"{areaName}\" on path \"{defaultPath}\".");
 
             return defaultPath;

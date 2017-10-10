@@ -1,10 +1,10 @@
-using Frapid.NPoco;
-using Frapid.NPoco.FluentMappings;
+using Frapid.Mapper.Database;
+using Frapid.Mapper.Decorators;
 using Newtonsoft.Json;
 
 namespace Frapid.DataAccess.Models
 {
-    public class EntityColumn: IPoco
+    public class EntityColumn : IPoco
     {
         private string _columnName;
         private string _nullable;
@@ -13,10 +13,7 @@ namespace Frapid.DataAccess.Models
 
         public string ColumnName
         {
-            get
-            {
-                return this._columnName;
-            }
+            get { return this._columnName; }
             set
             {
                 this._columnName = value;
@@ -24,27 +21,31 @@ namespace Frapid.DataAccess.Models
             }
         }
 
-
         public string DbDataType { get; set; }
 
         public string Value
         {
-            get
-            {
-                return this._value;
-            }
+            get { return this._value; }
             set
             {
                 this._value = value;
-                if(value.StartsWith("nextval"))
+
+                if (value == null)
                 {
-                    this.IsSerial = true;
-                    this._value = string.Empty;
+                    return;
                 }
+
+                if (!value.StartsWith("nextval"))
+                {
+                    return;
+                }
+
+                this.IsSerial = true;
+                this._value = string.Empty;
             }
         }
 
-        public int MaxLength { get; set; }
+        public int? MaxLength { get; set; }
         public bool IsSerial { get; set; }
         public string PropertyName { get; set; }
         public string DataType { get; set; }
@@ -57,10 +58,7 @@ namespace Frapid.DataAccess.Models
         [JsonIgnore]
         public string Nullable
         {
-            get
-            {
-                return this._nullable;
-            }
+            get { return this._nullable; }
             set
             {
                 this.IsNullable = value.ToUpperInvariant().Equals("YES");
@@ -78,10 +76,7 @@ namespace Frapid.DataAccess.Models
         [JsonIgnore]
         public string PrimaryKey
         {
-            get
-            {
-                return this._primaryKey;
-            }
+            get { return this._primaryKey; }
             set
             {
                 this.IsPrimaryKey = value.ToUpperInvariant().Equals("YES");

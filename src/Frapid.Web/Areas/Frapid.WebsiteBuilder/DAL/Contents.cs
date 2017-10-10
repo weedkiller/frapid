@@ -1,8 +1,14 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Frapid.Configuration;
 using Frapid.Configuration.Db;
 using Frapid.DataAccess;
+using Frapid.Framework.Extensions;
+using Frapid.Mapper;
+using Frapid.Mapper.Query.Insert;
+using Frapid.Mapper.Query.Select;
+using Frapid.Mapper.Query.Update;
 using Frapid.WebsiteBuilder.DTO;
 
 namespace Frapid.WebsiteBuilder.DAL
@@ -13,7 +19,26 @@ namespace Frapid.WebsiteBuilder.DAL
         {
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return await db.Query<Content>().Where(c => c.IsHomepage).ToListAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT * FROM website.contents");
+                sql.Where("is_homepage=@0", true);
+                sql.And("deleted=@0",false);
+
+                return await db.SelectAsync<Content>(sql).ConfigureAwait(false);
+            }
+        }
+
+        public static async Task<int> AddOrEditAsync(string tenant, Content content)
+        {
+            using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
+            {
+                if (content.ContentId > 0)
+                {
+                    await db.UpdateAsync(content, content.ContentId).ConfigureAwait(false);
+                    return content.ContentId;
+                }
+
+                var id = await db.InsertAsync(content).ConfigureAwait(false);
+                return id.To<int>();
             }
         }
 
@@ -21,7 +46,8 @@ namespace Frapid.WebsiteBuilder.DAL
         {
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return await db.Query<PublishedContentView>().ToListAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT * FROM website.published_content_view");
+                return await db.SelectAsync<PublishedContentView>(sql).ConfigureAwait(false);
             }
         }
 
@@ -29,8 +55,12 @@ namespace Frapid.WebsiteBuilder.DAL
         {
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return await db.Query<Content>().Where(c => c.ContentId == contentId)
-                    .FirstOrDefaultAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT * FROM website.contents");
+                sql.Where("content_id=@0", contentId);
+                sql.And("deleted=@0",false);
+
+                var awaiter = await db.SelectAsync<Content>(sql).ConfigureAwait(false);
+                return awaiter.FirstOrDefault();
             }
         }
 
@@ -44,13 +74,13 @@ namespace Frapid.WebsiteBuilder.DAL
 
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return await db.Query<PublishedContentView>().Where(c => c.Alias.ToLower().Equals(alias.ToLower())
-                                                                         &&
-                                                                         c.CategoryAlias.ToLower()
-                                                                             .Equals(categoryAlias.ToLower())
-                                                                         && c.IsBlog == isBlog
-                    )
-                    .FirstOrDefaultAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT * FROM website.published_content_view");
+                sql.Where("LOWER(alias)=@0", alias.ToLower());
+                sql.And("LOWER(category_alias)=@0", categoryAlias);
+                sql.And("is_blog=@0", isBlog);
+
+                var awaiter = await db.SelectAsync<PublishedContentView>(sql).ConfigureAwait(false);
+                return awaiter.FirstOrDefault();
             }
         }
 
@@ -61,9 +91,12 @@ namespace Frapid.WebsiteBuilder.DAL
         {
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return await
-                    db.Query<PublishedContentView>().Where(x => x.IsBlog && x.CategoryAlias == categoryAlias)
-                        .Limit(offset, limit).ToListAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT * FROM website.published_content_view");
+                sql.Where("LOWER(category_alias)=@0", categoryAlias);
+                sql.And("is_blog=@0", true);
+                sql.Limit(db.DatabaseType, limit, offset, "publish_on");
+
+                return await db.SelectAsync<PublishedContentView>(sql).ConfigureAwait(false);
             }
         }
 
@@ -71,9 +104,11 @@ namespace Frapid.WebsiteBuilder.DAL
         {
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return await
-                    db.Query<PublishedContentView>().Where(x => x.IsBlog && x.CategoryAlias == categoryAlias)
-                        .CountAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT COUNT(*) FROM website.published_content_view");
+                sql.And("is_blog=@0", true);
+                sql.Where("LOWER(category_alias)=@0", categoryAlias);
+
+                return await db.ScalarAsync<int>(sql).ConfigureAwait(false);
             }
         }
 
@@ -81,7 +116,10 @@ namespace Frapid.WebsiteBuilder.DAL
         {
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return await db.Query<PublishedContentView>().Where(x => x.IsBlog).CountAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT COUNT(*) FROM website.published_content_view");
+                sql.And("is_blog=@0", true);
+
+                return await db.ScalarAsync<int>(sql).ConfigureAwait(false);
             }
         }
 
@@ -89,8 +127,12 @@ namespace Frapid.WebsiteBuilder.DAL
         {
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return
-                    await db.Query<PublishedContentView>().Where(x => x.IsBlog).Limit(offset, limit).ToListAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT * FROM website.published_content_view");
+                sql.Where("is_blog=@0", true);
+
+                sql.Limit(db.DatabaseType, limit, offset, "publish_on");
+
+                return await db.SelectAsync<PublishedContentView>(sql).ConfigureAwait(false);
             }
         }
 
@@ -98,9 +140,12 @@ namespace Frapid.WebsiteBuilder.DAL
         {
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return await
-                    db.Query<PublishedContentView>().Where(c => c.IsHomepage).Limit(1)
-                        .FirstOrDefaultAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT * FROM website.published_content_view");
+                sql.Where("is_homepage=@0", true);
+                sql.Limit(db.DatabaseType, 1, 0, "publish_on");
+
+                var awaiter = await db.SelectAsync<PublishedContentView>(sql).ConfigureAwait(false);
+                return awaiter.FirstOrDefault();
             }
         }
 
@@ -112,14 +157,16 @@ namespace Frapid.WebsiteBuilder.DAL
 
         public static async Task<IEnumerable<PublishedContentView>> SearchAsync(string tenant, string query)
         {
+            query = "%" + query.ToLower() + "%";
+
             using (var db = DbProvider.Get(FrapidDbServer.GetConnectionString(tenant), tenant).GetDatabase())
             {
-                return await
-                    db.Query<PublishedContentView>().Where(
-                        c =>
-                            c.Title.ToLower().Contains(query.ToLower()) ||
-                            c.Alias.ToLower().Contains(query.ToLower()) ||
-                            c.Contents.ToLower().Contains(query.ToLower())).ToListAsync().ConfigureAwait(false);
+                var sql = new Sql("SELECT * FROM website.published_content_view");
+                sql.Where("LOWER(title) LIKE @0", query);
+                sql.And("LOWER(alias) LIKE @0", query);
+                sql.And("LOWER(contents) LIKE @0", query);
+
+                return await db.SelectAsync<PublishedContentView>(sql).ConfigureAwait(false);
             }
         }
     }

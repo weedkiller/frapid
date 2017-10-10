@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\Microsoft.Net.Compilers.1.2.2\build\Microsoft.Net.Compilers.props" Condition="Exists('packages\Microsoft.Net.Compilers.1.2.2\build\Microsoft.Net.Compilers.props')" />
-  <Import Project="packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.1\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.1\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
+  <Import Project="packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
+  <Import Project="packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props" Condition="Exists('packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -43,6 +43,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AngleSharp, Version=0.9.9.0, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
+      <HintPath>packages\AngleSharp.0.9.9\lib\net45\AngleSharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="DocumentFormat.OpenXml, Version=2.6.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\OpenXMLSDK-MOT.2.6.1.0\lib\DocumentFormat.OpenXml.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Frapid.ApplicationState, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.ApplicationState.dll</HintPath>
@@ -50,6 +58,9 @@
     <Reference Include="Frapid.Areas, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.Areas.dll</HintPath>
+    </Reference>
+    <Reference Include="Frapid.Config">
+      <HintPath>..\..\bin\Frapid.Config.dll</HintPath>
     </Reference>
     <Reference Include="Frapid.Configuration, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -63,6 +74,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.DataAccess.dll</HintPath>
     </Reference>
+    <Reference Include="Frapid.DbPolicy">
+      <HintPath>..\..\bin\Frapid.DbPolicy.dll</HintPath>
+    </Reference>
     <Reference Include="Frapid.Framework, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.Framework.dll</HintPath>
@@ -71,37 +85,40 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.i18n.dll</HintPath>
     </Reference>
+    <Reference Include="Frapid.Mapper">
+      <HintPath>..\..\bin\Frapid.Mapper.dll</HintPath>
+    </Reference>
     <Reference Include="Frapid.Messaging, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.Messaging.dll</HintPath>
-    </Reference>
-    <Reference Include="Frapid.NPoco, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\Frapid.NPoco.dll</HintPath>
     </Reference>
     <Reference Include="Frapid.WebsiteBuilder, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Frapid.WebsiteBuilder.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
+    <Reference Include="HtmlAgilityPack, Version=1.4.9.5, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <HintPath>packages\HtmlAgilityPack.1.4.9.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=1.0.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Mono.Security, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>packages\Npgsql.2.2.6\lib\net45\Mono.Security.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\bin\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Npgsql, Version=3.1.9.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
+      <HintPath>packages\Npgsql.3.1.9\lib\net451\Npgsql.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Npgsql, Version=2.2.6.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
-      <HintPath>packages\Npgsql.2.2.6\lib\net45\Npgsql.dll</HintPath>
+    <Reference Include="PreMailer.Net, Version=1.5.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\PreMailer.Net.1.5.5\lib\net45\PreMailer.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Serilog, Version=1.5.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
-      <HintPath>packages\Serilog.1.5.14\lib\net45\Serilog.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Serilog.FullNetFx, Version=1.5.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
-      <HintPath>packages\Serilog.1.5.14\lib\net45\Serilog.FullNetFx.dll</HintPath>
+    <Reference Include="Serilog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
+      <HintPath>packages\Serilog.2.3.0\lib\net46\Serilog.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Web.DynamicData" />
@@ -120,6 +137,10 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Web.Services" />
     <Reference Include="System.EnterpriseServices" />
+    <Reference Include="WindowsBase">
+      <HintPath>packages\WindowsBase.4.6.1055.0\lib\WindowsBase.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web.Razor">
@@ -146,7 +167,29 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AreaRegistration.cs" />
+    <Compile Include="Controllers\Backend\EmailController.cs" />
+    <Compile Include="Controllers\Backend\ReportBrowserController.cs" />
+    <Compile Include="Engine\Generators\ScriptGenerator.cs" />
+    <Compile Include="Engine\Model\DataSourceFormattingField.cs" />
+    <Compile Include="Engine\Parsers\ScriptParser.cs" />
+    <Compile Include="Helpers\LocalizationHelper.cs" />
+    <Compile Include="Models\ReportHelper.cs" />
+    <Compile Include="I18N.cs" />
+    <Compile Include="Models\ReportBrowser.cs" />
+    <Compile Include="Models\EmailException.cs" />
+    <Compile Include="Models\Emails.cs" />
+    <Compile Include="Controllers\Backend\ExportController.cs" />
+    <Compile Include="ExportHelper.cs" />
+    <Compile Include="HtmlConverters\ToOpenOfficeWord.cs" />
+    <Compile Include="HtmlConverters\ToOpenOfficeSpreadSheet.cs" />
+    <Compile Include="HtmlConverters\WkHtmlToPdf.cs" />
+    <Compile Include="HtmlConverters\HtmlWriter.cs" />
+    <Compile Include="IExportTo.cs" />
+    <Compile Include="Models\ReportBrowserException.cs" />
     <Compile Include="Models\ReportLocator.cs" />
+    <Compile Include="PdfConvert.cs" />
+    <Compile Include="ViewModels\EmailViewModel.cs" />
+    <Compile Include="ViewModels\HtmlConverterViewModel.cs" />
     <Compile Include="ViewModels\ParameterMeta.cs" />
     <Compile Include="Controllers\Backend\ReportController.cs" />
     <Compile Include="Controllers\Backend\SourceController.cs" />
@@ -159,7 +202,6 @@
     <Compile Include="Engine\Generators\TopSectionGenerator.cs" />
     <Compile Include="Engine\IGenerator.cs" />
     <Compile Include="Engine\Model\DataSourceParameter.cs" />
-    <Compile Include="Engine\Model\DataSourceParameterType.cs" />
     <Compile Include="Engine\Model\DataSource.cs" />
     <Compile Include="Engine\Model\GridView.cs" />
     <Compile Include="Engine\Model\ParameterInfo.cs" />
@@ -185,12 +227,16 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="styles\source.css" />
+    <Content Include="scripts\reports.js" />
+    <Content Include="styles\reports.css" />
     <Content Include="Views\web.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="web.config" />
     <Content Include="Views\Index.cshtml" />
     <Content Include="Views\Source.cshtml" />
+    <Content Include="Views\Browser.cshtml" />
     <None Include="web.Debug.config">
       <DependentUpon>web.config</DependentUpon>
     </None>
@@ -225,16 +271,16 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <PropertyGroup>
+    <PostBuildEvent>start xcopy /y /r "$(ProjectDir)\bin\*.dll" "$(ProjectDir)..\..\bin"</PostBuildEvent>
+  </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.1\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.1\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.Net.Compilers.1.2.2\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Net.Compilers.1.2.2\build\Microsoft.Net.Compilers.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.2\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
   </Target>
-  <PropertyGroup>
-    <PostBuildEvent>start xcopy /y /r $(ProjectDir)\bin\*.dll $(ProjectDir)..\..\bin</PostBuildEvent>
-  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

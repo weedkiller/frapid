@@ -29,7 +29,7 @@ namespace Frapid.Reports.Engine.Parsers
             return string.Empty;
         }
 
-        private object GetAttributeValue(XmlNode node, string name, DataSourceParameterType type)
+        private object GetAttributeValue(XmlNode node, string name, string type = "string")
         {
             string value = this.ReadAttributeValue(node, name);
             return DataSourceParameterHelper.CastValue(value, type);
@@ -42,9 +42,9 @@ namespace Frapid.Reports.Engine.Parsers
             return attribute?.Value;
         }
 
-        private object GetDefaultValue(Report report, XmlNode node, DataSourceParameterType type)
+        private object GetDefaultValue(Report report, XmlNode node, string type)
         {
-            string value = ReadAttributeValue(node, "DefaultValue");
+            string value = this.ReadAttributeValue(node, "DefaultValue");
 
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -57,9 +57,36 @@ namespace Frapid.Reports.Engine.Parsers
 
         private bool HasMetaValue(XmlNode node)
         {
-            string defaultValue = ReadAttributeValue(node, "DefaultValue");
+            string defaultValue = this.ReadAttributeValue(node, "DefaultValue");
 
             return !string.IsNullOrWhiteSpace(defaultValue) && defaultValue.ToLower().StartsWith("{meta");
+        }
+
+        private List<DataSourceFormattingField> GetFormattingField(Report report, XmlNode node)
+        {
+            var parameters = new List<DataSourceFormattingField>();
+
+            var candidates = node.ChildNodes.Cast<XmlNode>().Where(x => x.Name.Equals("Formatting"));
+
+            foreach (var item in candidates)
+            {
+                foreach (var current in item.ChildNodes.Cast<XmlNode>().Where(x => x.Name.Equals("Field")))
+                {
+                    if (current.Attributes != null)
+                    {
+                        string name = this.GetAttributeValue(current, "Name").ToString();
+                        string expression = this.GetAttributeValue(current, "FormatExpression").ToString();
+
+                        parameters.Add(new DataSourceFormattingField
+                        {
+                            Name = name,
+                            FormatExpression = expression
+                        });
+                    }
+                }
+            }
+
+            return parameters;
         }
 
         private List<DataSourceParameter> GetParameters(Report report, XmlNode node)
@@ -74,18 +101,16 @@ namespace Frapid.Reports.Engine.Parsers
                 {
                     if (current.Attributes != null)
                     {
-                        string name = GetAttributeValue(current, "Name", DataSourceParameterType.Text).ToString();
-                        var type =
-                            this.GetAttributeValue(current, "Type", DataSourceParameterType.Text)
-                                .ToString()
-                                .ToEnum(DataSourceParameterType.Text);
+                        string name = this.GetAttributeValue(current, "Name").ToString();
+                        string type = this.GetAttributeValue(current, "Type").ToString();
                         var defaultValue = this.GetDefaultValue(report, current, type);
                         bool hasMetaValue = this.HasMetaValue(current);
 
-                        string populateFrom = this.GetAttributeValue(current, "PopulateFrom", DataSourceParameterType.Text)?.ToString();
-                        string keyField = this.GetAttributeValue(current, "KeyField", DataSourceParameterType.Text)?.ToString();
-                        string valueField = this.GetAttributeValue(current, "ValueField", DataSourceParameterType.Text)?.ToString();
-                        string fieldLabel = this.GetAttributeValue(current, "FieldLabel", DataSourceParameterType.Text)?.ToString();
+                        string populateFrom = this.GetAttributeValue(current, "PopulateFrom")?.ToString();
+                        string keyField = this.GetAttributeValue(current, "KeyField")?.ToString();
+                        string valueField = this.GetAttributeValue(current, "ValueField")?.ToString();
+                        string fieldLabel = this.GetAttributeValue(current, "FieldLabel")?.ToString();
+                        var optional = this.GetAttributeValue(current, "Optional")?.ToString().ToUpperInvariant().StartsWith("T");
 
                         fieldLabel = ExpressionHelper.ParseExpression(report.Tenant, fieldLabel, report.DataSources, ParameterHelper.GetPraParameterInfo(report));
 
@@ -98,7 +123,8 @@ namespace Frapid.Reports.Engine.Parsers
                             PopulateFrom = populateFrom,
                             KeyField = keyField,
                             ValueField = valueField,
-                            FieldLabel = fieldLabel
+                            FieldLabel = fieldLabel,
+                            Optional = optional ?? false
                         });
                     }
                 }
@@ -109,16 +135,15 @@ namespace Frapid.Reports.Engine.Parsers
 
         private List<int> GetRunningTotalFieldIndices(XmlNode node)
         {
-            var candidate =
-                node.ChildNodes.Cast<XmlNode>().FirstOrDefault(x => x.Name.Equals("RunningTotalFieldIndices"));
+            var candidate = node.ChildNodes.Cast<XmlNode>().FirstOrDefault(x => x.Name.Equals("RunningTotalFieldIndices"));
 
-            if (candidate != null)
+            if (string.IsNullOrWhiteSpace(candidate?.InnerText))
             {
-                var value = candidate.InnerText.Split(',').Select(int.Parse).ToList();
-                return value;
+                return new List<int>();
             }
 
-            return new List<int>();
+            var value = candidate.InnerText.Split(',').Select(int.Parse).ToList();
+            return value;
         }
 
         private int? GetRunningTotalTextColumnIndex(XmlNode node)
@@ -132,14 +157,29 @@ namespace Frapid.Reports.Engine.Parsers
         public List<DataSource> Get(Report report)
         {
             var nodes = XmlHelper.GetNodes(this.Path, "//DataSource");
+
+            if (nodes == null)
+            {
+                return this.DataSources;
+            }
+
             int index = 0;
+
             foreach (XmlNode node in nodes)
             {
+                bool returnsJson = this.GetAttributeValue(node, "ReturnsJson")?.To<bool>() ?? false;
+                bool hideWhenEmpty = this.GetAttributeValue(node, "HideWhenEmpty")?.To<bool>() ?? false;
+                string title = this.GetAttributeValue(node, "Title")?.ToString() ?? "";
+
                 this.DataSources.Add(new DataSource
                 {
                     Index = index,
+                    Title = title,
+                    HideWhenEmpty = hideWhenEmpty,
+                    ReturnsJson = returnsJson,
                     Query = this.GetQuery(node),
                     Parameters = this.GetParameters(report, node),
+                    FormattingFields = this.GetFormattingField(report, node),
                     RunningTotalFieldIndices = this.GetRunningTotalFieldIndices(node),
                     RunningTotalTextColumnIndex = this.GetRunningTotalTextColumnIndex(node)
                 });

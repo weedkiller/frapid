@@ -5,7 +5,7 @@ using Frapid.Web.Jobs;
 using Quartz;
 using Quartz.Impl;
 
-namespace Frapid.Web
+namespace Frapid.Web.Application
 {
     public class EodTaskRegistration
     {
@@ -21,7 +21,7 @@ namespace Frapid.Web
             int hour = 0;
             int minute = 0;
 
-            if(scheduleData.Length.Equals(2))
+            if (scheduleData.Length.Equals(2))
             {
                 hour = scheduleData[0].To<int>();
                 minute = scheduleData[1].To<int>();

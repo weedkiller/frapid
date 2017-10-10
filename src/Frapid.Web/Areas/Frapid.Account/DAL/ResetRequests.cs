@@ -12,8 +12,8 @@ namespace Frapid.Account.DAL
     {
         public static async Task<Reset> GetIfActiveAsync(string tenant, string token)
         {
-            const string sql = "SELECT * FROM account.reset_requests WHERE request_id=@0 AND expires_on >= @1 AND confirmed=@2;";
-            return (await Factory.GetAsync<Reset>(tenant, sql, token, DateTimeOffset.UtcNow, false).ConfigureAwait(false)).FirstOrDefault();
+            const string sql = "SELECT * FROM account.reset_requests WHERE request_id=@0 AND expires_on >= @1 AND confirmed=@2 AND deleted=@3;";
+            return (await Factory.GetAsync<Reset>(tenant, sql, token, DateTimeOffset.UtcNow, false, false).ConfigureAwait(false)).FirstOrDefault();
         }
 
         public static async Task CompleteResetAsync(string tenant, string requestId, string password)
@@ -25,9 +25,7 @@ namespace Frapid.Account.DAL
         public static async Task<Reset> RequestAsync(string tenant, ResetInfo model)
         {
             string sql = FrapidDbServer.GetProcedureCommand(tenant, "account.reset_account", new[] {"@0", "@1", "@2"});
-            return
-                (await Factory.GetAsync<Reset>(tenant, sql, model.Email, model.Browser, model.IpAddress).ConfigureAwait(false))
-                    .FirstOrDefault();
+            return (await Factory.GetAsync<Reset>(tenant, sql, model.Email, model.Browser, model.IpAddress).ConfigureAwait(false)).FirstOrDefault();
         }
 
         public static async Task<bool> HasActiveResetRequestAsync(string tenant, string email)
